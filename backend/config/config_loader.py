@@ -17,19 +17,15 @@ class ConfigLoader:
         Initialize the ConfigLoader with a relative config file path.
         The config file path will be resolved relative to the script's directory.
         """
-        logging.info(f"Provided relative config file path: {config_file}")
         
         # Get the directory of the current script
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        logging.info(f"Script directory: {script_dir}")
         
         # Construct the absolute path to the config.json file
         self.config_file = os.path.join(script_dir, config_file)
-        logging.info(f"Resolved absolute config file path: {self.config_file}")
         
         # Check if the config file exists at the resolved path
         if not os.path.exists(self.config_file):
-            logging.error(f"Config file does not exist at: {self.config_file}")
             raise FileNotFoundError(f"Config file not found: {self.config_file}")
         
         # Load the configuration data
@@ -66,12 +62,13 @@ if __name__ == "__main__":
     config_loader = ConfigLoader()
 
     # Load configurations
-    EXAMPLE_CSV_PATH = config_loader.get("EXAMPLE_CSV_PATH")
-    EXAMPLE_CSV_FILES = config_loader.get("EXAMPLE_CSV_FILES")
-    EXAMPLE_INDUSTRY = config_loader.get("EXAMPLE_INDUSTRY")
-    EXAMPLE_MODEL_ID = config_loader.get("EXAMPLE_MODEL_ID")
+    CSV_FILEPATH = config_loader.get("CSV_FILEPATH")
+    INDUSTRY = config_loader.get("INDUSTRY")
+    CHATCOMPLETIONS_MODEL_ID = config_loader.get("CHATCOMPLETIONS_MODEL_ID")
+    EMBEDDINGS_MODEL_ID = config_loader.get("EMBEDDINGS_MODEL_ID")
 
-    print(EXAMPLE_CSV_PATH)
-    print(EXAMPLE_CSV_FILES)
-    print(EXAMPLE_INDUSTRY)
-    print(EXAMPLE_MODEL_ID)
+    print(f"Example CSV Path: {CSV_FILEPATH}")
+    print(f"Example Industry: {INDUSTRY}")
+    print(f"Example Chat Completions Model ID: {CHATCOMPLETIONS_MODEL_ID}")
+    print(f"Example Embeddings Model ID: {EMBEDDINGS_MODEL_ID}")
+    

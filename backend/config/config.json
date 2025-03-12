@@ -1,9 +1,10 @@
 {
-    "EXAMPLE_CSV_PATH": "data/fsi/",
-    "EXAMPLE_CSV_FILES": [
-        "financial_news_headlines.csv", "spy_5d_1m_data.csv"
-    ],
-    "EXAMPLE_INDUSTRY": "FSI",
-    "EXAMPLE_CHATCOMPLETIONS_MODEL_ID": "anthropic.claude-3-haiku-20240307-v1:0",
-    "EXAMPLE_EMBEDDINGS_MODEL_ID": "cohere.embed-english-v3"
+    "CSV_DATA": "data/telemetry_data.csv",
+    "CSV_TO_VECTORIZE": "data/issues.csv",
+    "MDB_DATA_COLLECTION": "data",
+    "MDB_VECTORS_COLLECTION": "vectors",
+    "MDB_CHAT_HISTORY_COLLECTION": "chat_history",
+    "INDUSTRY": "Cross",
+    "CHATCOMPLETIONS_MODEL_ID": "anthropic.claude-3-haiku-20240307-v1:0",
+    "EMBEDDINGS_MODEL_ID": "cohere.embed-english-v3"
 }
