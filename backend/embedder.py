@@ -1,5 +1,4 @@
 import os
-import pandas as pd
 import logging
 
 from db.mdb import MongoDBConnector
@@ -128,4 +127,4 @@ if __name__ == "__main__":
 
     # Example usage
     embedder = Embedder()
-    embedder.embed(attribute_name="col_1", overwrite=True)
+    embedder.embed(attribute_name="issue", overwrite=True)

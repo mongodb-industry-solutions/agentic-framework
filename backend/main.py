@@ -27,9 +27,9 @@ if __name__ == "__main__":
     vector_df = vector.load()
     print(vector_df.head())
 
-    print("Storing vector data...")
+    print("Storing issues...")
     result = vector.store(vector_df)
     print(result)
 
-    print("Data and vector data stored successfully.")
+    print("Data stored successfully.")
     

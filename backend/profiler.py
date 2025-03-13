@@ -1,16 +1,8 @@
-import os
-import pandas as pd
 import logging
 from pymongo.errors import DuplicateKeyError
 
 from db.mdb import MongoDBConnector
 from config.config_loader import ConfigLoader
-
-from dotenv import load_dotenv
-import os
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Configure logging
 logging.basicConfig(
