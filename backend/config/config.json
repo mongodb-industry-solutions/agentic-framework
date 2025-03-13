@@ -1,10 +1,18 @@
 {
+    "INDUSTRY": "Cross",
     "CSV_DATA": "data/telemetry_data.csv",
     "CSV_TO_VECTORIZE": "data/issues.csv",
     "MDB_DATA_COLLECTION": "data",
     "MDB_VECTORS_COLLECTION": "vectors",
     "MDB_CHAT_HISTORY_COLLECTION": "chat_history",
-    "INDUSTRY": "Cross",
+    "MDB_AGENT_PROFILES_COLLECTION": "agent_profiles",
+    "DEFAULT_AGENT_PROFILE": {
+        "agent_id": "DEFAULT",
+        "profile": "Default Agent Profile",
+        "instructions": "Follow procedures meticulously.",
+        "rules": "Document all steps.",
+        "goals": "Provide actionable recommendations."
+    },
     "CHATCOMPLETIONS_MODEL_ID": "anthropic.claude-3-haiku-20240307-v1:0",
     "EMBEDDINGS_MODEL_ID": "cohere.embed-english-v3"
 }

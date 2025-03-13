@@ -38,7 +38,6 @@ class ConfigLoader:
         try:
             with open(self.config_file, "r") as file:
                 config_data = json.load(file)
-                logging.info(f"Successfully loaded configuration file: {self.config_file}")
                 return config_data
         except FileNotFoundError:
             logging.error(f"Configuration file {self.config_file} not found.")
