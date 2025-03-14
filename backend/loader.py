@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import logging
 from db.mdb import MongoDBConnector
-
+from datetime import datetime
 
 # Configure logging
 logging.basicConfig(
@@ -84,11 +84,18 @@ class CSVLoader(MongoDBConnector):
         try:
             # Convert the DataFrame to a list of dictionaries
             records = df.to_dict(orient="records")
+            
+            # Convert 'timestamp' field to BSON UTC datetime if it exists
+            for record in records:
+                if 'timestamp' in record:
+                    record['timestamp'] = datetime.strptime(record['timestamp'], "%Y-%m-%dT%H:%M:%SZ")
+
             # Check if the collection should be overwritten
             if overwrite:
                 # Drop all records in the collection
                 self.collection.delete_many({})
                 logger.info(f"Deleted all records in MongoDB collection: {self.collection_name}")
+            
             # Insert the records into the MongoDB collection
             result = self.collection.insert_many(records)
             logger.info(f"Successfully stored DataFrame to MongoDB collection: {self.collection_name}")
@@ -96,4 +103,3 @@ class CSVLoader(MongoDBConnector):
         except Exception as e:
             logger.error(f"Error storing DataFrame to MongoDB collection: {self.collection_name} - {e}")
             raise
-
