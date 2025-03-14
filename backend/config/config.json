@@ -20,6 +20,7 @@
     "AGENT_PROFILE_CHOSEN": "MANUFACTORING_AG01",
     "AGENT_MOTIVE": "diagnose vehicle issues",
     "AGENT_DATA_CONSUMED": "telemetry data",
+    "LLM_RECOMMENDATION_ROLE": "You are a vehicle maintenance advisor.",
     "EMBEDDINGS_MODEL_NAME": "Cohere Embed English V3 Model (within AWS Bedrock)",
     "EMBEDDINGS_MODEL_ID": "cohere.embed-english-v3",
     "CHATCOMPLETIONS_MODEL_NAME": "Anthropic Claude 3 Haiku (within AWS Bedrock)",
