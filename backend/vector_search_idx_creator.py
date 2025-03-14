@@ -23,17 +23,8 @@ MDB_VECTOR_SEARCH_INDEX = config.get("MDB_VECTOR_SEARCH_INDEX")
 MDB_VECTOR_SEARCH_FIELD = config.get("MDB_VECTOR_SEARCH_FIELD")
 
 class VectorSearchIDXCreator(MongoDBConnector):
-
     def __init__(self, collection_name: str = MDB_EMBEDDINGS_COLLECTION, uri=None, database_name: str = None, appname: str = None):
-        """
-        Embedder class to generate embeddings for text data stored in MongoDB.
-
-        Args:
-            collection_name (str, optional): Collection name. Default is MDB_EMBEDDINGS_COLLECTION.
-            uri (str, optional): MongoDB URI. Default parent class value.
-            database_name (str, optional): Database name. Default parent class value.
-            appname (str, optional): Application name. Default parent class value.
-        """
+        """ VectorSearchIDXCreator class to create a vector search index in MongoDB. """
         super().__init__(uri, database_name, appname)
         self.collection_name = collection_name
         self.collection = self.get_collection(self.collection_name)
