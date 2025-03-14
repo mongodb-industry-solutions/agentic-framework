@@ -1,6 +1,6 @@
 import json
 
-from embeddings.bedrock.client import BedrockClient
+from bedrock.client import BedrockClient
 from botocore.exceptions import ClientError
 
 from typing import Optional
@@ -25,14 +25,14 @@ class BedrockCohereEnglishEmbeddings(BedrockClient):
 
     log: logging.Logger = logging.getLogger("BedrockCohereEnglishEmbeddings")
 
-    def __init__(self, model_id: str, aws_access_key: Optional[str] = None, aws_secret_key: Optional[str] = None,
-                 region_name: Optional[str] = "us-east-1", ) -> None:
+    def __init__(self, model_id: str = "cohere.embed-english-v3", aws_access_key: Optional[str] = os.getenv("AWS_ACCESS_KEY_ID"), 
+                 aws_secret_key: Optional[str] = os.getenv("AWS_SECRET_ACCESS_KEY"), region_name: Optional[str] = os.getenv("AWS_REGION") ) -> None:
         super().__init__(aws_access_key=aws_access_key, aws_secret_key=aws_secret_key, region_name=region_name)
         """
         Initialize the BedrockCohereEnglishEmbeddings class.
         
         Args:
-            model_id (str): The model ID to use. Only accepts Cohere Embed English models.
+            model_id (str): The model ID to use. Only accepts Cohere Embed English models. Default is "cohere.embed-english-v3".
             aws_access_key (str): The AWS access key.
             aws_secret_key (str): The AWS secret key.
             region_name (str): The AWS region name.
