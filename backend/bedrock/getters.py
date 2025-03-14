@@ -1,4 +1,4 @@
-from embeddings.bedrock.client import BedrockClient
+from bedrock.client import BedrockClient
 from langchain_aws import BedrockEmbeddings
 
 from dotenv import load_dotenv

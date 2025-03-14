@@ -3,7 +3,7 @@ import logging
 
 from db.mdb import MongoDBConnector
 from config.config_loader import ConfigLoader
-from embeddings.bedrock.cohere_embeddings import BedrockCohereEnglishEmbeddings
+from bedrock.cohere_embeddings import BedrockCohereEnglishEmbeddings
 
 from dotenv import load_dotenv
 import os
