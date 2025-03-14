@@ -1,9 +1,9 @@
 from loader import CSVLoader
 from config.config_loader import ConfigLoader
-from timeseries_collection_creator import TimeSeriesCollectionCreator
+from timeseries_coll_creator import TimeSeriesCollectionCreator
+from vector_search_idx_creator import VectorSearchIDXCreator
 from embedder import Embedder
 from agent_tools import AgentTools
-from vector_search_idx_creator import VectorSearchIDXCreator
 
 
 # ==================

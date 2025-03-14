@@ -701,6 +701,22 @@ langchain-core = ">=0.2.38,<0.4"
 msgpack = ">=1.1.0,<2.0.0"
 
 [[package]]
+name = "langgraph-checkpoint-mongodb"
+version = "0.1.1"
+description = "Library with a MongoDB implementation of LangGraph checkpoint saver."
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "langgraph_checkpoint_mongodb-0.1.1-py3-none-any.whl", hash = "sha256:1ff2c3cb2a9139c38ea9cf398659b8b32d6bbfcc4999713b62014431477c5ac5"},
+    {file = "langgraph_checkpoint_mongodb-0.1.1.tar.gz", hash = "sha256:350d347b0458fb7977231ac1295095bef512458ee0debe09fd394d913b8d89d3"},
+]
+
+[package.dependencies]
+langgraph-checkpoint = ">=2.0.0"
+motor = ">3.5.0"
+pymongo = ">=4.9,<4.12"
+
+[[package]]
 name = "langgraph-prebuilt"
 version = "0.1.2"
 description = "Library with high-level APIs for creating and executing LangGraph agents and tools."
@@ -753,6 +769,30 @@ zstandard = ">=0.23.0,<0.24.0"
 [package.extras]
 langsmith-pyo3 = ["langsmith-pyo3 (>=0.1.0rc2,<0.2.0)"]
 pytest = ["pytest (>=7.0.0)", "rich (>=13.9.4,<14.0.0)"]
+
+[[package]]
+name = "motor"
+version = "3.7.0"
+description = "Non-blocking MongoDB driver for Tornado or asyncio"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "motor-3.7.0-py3-none-any.whl", hash = "sha256:61bdf1afded179f008d423f98066348157686f25a90776ea155db5f47f57d605"},
+    {file = "motor-3.7.0.tar.gz", hash = "sha256:0dfa1f12c812bd90819c519b78bed626b5a9dbb29bba079ccff2bfa8627e0fec"},
+]
+
+[package.dependencies]
+pymongo = ">=4.9,<5.0"
+
+[package.extras]
+aws = ["pymongo[aws] (>=4.5,<5)"]
+docs = ["aiohttp", "furo (==2024.8.6)", "readthedocs-sphinx-search (>=0.3,<1.0)", "sphinx (>=5.3,<8)", "sphinx-rtd-theme (>=2,<3)", "tornado"]
+encryption = ["pymongo[encryption] (>=4.5,<5)"]
+gssapi = ["pymongo[gssapi] (>=4.5,<5)"]
+ocsp = ["pymongo[ocsp] (>=4.5,<5)"]
+snappy = ["pymongo[snappy] (>=4.5,<5)"]
+test = ["aiohttp (>=3.8.7)", "cffi (>=1.17.0rc1)", "mockupdb", "pymongo[encryption] (>=4.5,<5)", "pytest (>=7)", "pytest-asyncio", "tornado (>=5)"]
+zstd = ["pymongo[zstd] (>=4.5,<5)"]
 
 [[package]]
 name = "msgpack"
@@ -1785,4 +1825,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.11"
-content-hash = "8a2c9986fd12d6c1cf85ef8f9c8c2a099192f2219a3052b89bb3b676791a86e0"
+content-hash = "05b222fbd176f3cf25b71ea695218b4b22498c6b35422ff15b7e88487f1407e7"

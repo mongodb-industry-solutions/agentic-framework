@@ -16,7 +16,7 @@ import csv
 from agent_state_types import AgentState
 from embedder import Embedder
 from profiler import AgentProfiler
-from timeseries_collection_creator import TimeSeriesCollectionCreator
+from timeseries_coll_creator import TimeSeriesCollectionCreator
 
 from dotenv import load_dotenv
 
@@ -47,11 +47,12 @@ CHATCOMPLETIONS_MODEL_NAME = config.get("CHATCOMPLETIONS_MODEL_NAME")
 AGENT_MOTIVE = config.get("AGENT_MOTIVE")
 AGENT_DATA_CONSUMED = config.get("AGENT_DATA_CONSUMED")
 LLM_RECOMMENDATION_ROLE = config.get("LLM_RECOMMENDATION_ROLE")
+MDB_HISTORICAL_RECOMMENDATIONS_COLLECTION = config.get("MDB_HISTORICAL_RECOMMENDATIONS_COLLECTION")
 
 class AgentTools(MongoDBConnector):
     def __init__(self, collection_name: str = None, uri=None, database_name: str = None, appname: str = None):
         """
-        Embedder class to generate embeddings for text data stored in MongoDB.
+        AgentTools class to perform various actions for the agent.
 
         Args:
             collection_name (str, optional): Collection name.
@@ -168,14 +169,7 @@ class AgentTools(MongoDBConnector):
 
     @staticmethod
     def generate_chain_of_thought(state: AgentState) -> AgentState:
-        """Generates the chain of thought for the agent.
-
-        Args:
-            state (AgentState): The agent state.
-
-        Returns:
-            AgentState: The updated agent state.
-        """
+        """Generates the chain of thought for the agent."""
         logger.info("[LLM Chain-of-Thought Reasoning]")
         # Example usage
         profiler = AgentProfiler()
@@ -218,27 +212,13 @@ class AgentTools(MongoDBConnector):
         return {**state, "chain_of_thought": chain_of_thought, "next_step": "get_data_from_csv_tool"}
     
     def process_data(state: AgentState) -> AgentState:
-        """Processes the data.
-
-        Args:
-            state (AgentState): The agent state.
-
-        Returns:
-            AgentState: The updated agent state.
-        """
+        """Processes the data."""
         state.setdefault("updates", []).append("Data processed.")
         state["next_step"] = "embedding_node"
         return state
 
     def get_query_embedding(state: AgentState) -> AgentState:
-        """Generates the query embedding.
-
-        Args:
-            state (AgentState): The agent state.
-
-        Returns:
-            AgentState: The updated agent state.
-        """
+        """Generates the query embedding."""
         logger.info("[Action] Generating Query Embedding...")
         state.setdefault("updates", []).append("Generating query embedding...")
 
@@ -373,6 +353,25 @@ class AgentTools(MongoDBConnector):
         logger.info(llm_recommendation)
         state.setdefault("updates", []).append("Final recommendation generated.")
 
+        try:
+            recommendation_record = {
+                "thread_id": state.get("thread_id", ""),
+                "timestamp": datetime.datetime.now(datetime.timezone.utc),
+                "issue_report": state["issue_report"],
+                "telemetry_data": state["telemetry_data"],
+                "similar_issues": state["similar_issues_list"],
+                "recommendation": llm_recommendation
+            }
+            recommendation_record = convert_objectids(recommendation_record)
+            self.collection.insert_one(recommendation_record)
+            state.setdefault("updates", []).append("Recommendation stored in MongoDB.")
+            logger.info("[MongoDB] Recommendation stored in historical records")
+        except Exception as e:
+            logger.error(f"Error storing recommendation in MongoDB: {e}")
+            state.setdefault("updates", []).append("Error storing recommendation in MongoDB.")
+
+        return {**state, "recommendation_text": llm_recommendation, "next_step": "end"}
+
 
 
 
@@ -427,8 +426,18 @@ def persist_data_tool(state: AgentState) -> AgentState:
     mdb_persist = AgentTools(collection_name=MDB_TIMESERIES_COLLECTION)
     return mdb_persist.persist_data(state)
 
+
+@tool
+def get_llm_recommendation_tool(state: AgentState) -> AgentState:
+    """Generates the LLM recommendation."""
+    mdb_recommendation = AgentTools(collection_name=MDB_HISTORICAL_RECOMMENDATIONS_COLLECTION)
+    return mdb_recommendation.get_llm_recommendation(state)
+
+
+
 # Define the list of tools
-tools = [get_data_from_csv_tool, get_data_from_mdb_tool, vector_search_tool, generate_chain_of_thought_tool, process_data_tool, get_query_embedding_tool, process_vector_search_tool, persist_data_tool]
+tools = [get_data_from_csv_tool, get_data_from_mdb_tool, vector_search_tool, generate_chain_of_thought_tool, process_data_tool, get_query_embedding_tool, 
+         process_vector_search_tool, persist_data_tool, get_llm_recommendation_tool]
 
 if __name__ == "__main__":
 
