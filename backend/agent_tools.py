@@ -6,7 +6,7 @@ import logging
 from langchain.agents import tool
 
 from config.config_loader import ConfigLoader
-from config.prompts import get_chain_of_thoughts_prompt
+from config.prompts import get_chain_of_thoughts_prompt, get_llm_recommendation_prompt
 from utils import convert_objectids
 from bedrock.anthropic_chat_completions import BedrockAnthropicChatCompletions
 
@@ -46,6 +46,7 @@ EMBEDDINGS_MODEL_NAME = config.get("EMBEDDINGS_MODEL_NAME")
 CHATCOMPLETIONS_MODEL_NAME = config.get("CHATCOMPLETIONS_MODEL_NAME")
 AGENT_MOTIVE = config.get("AGENT_MOTIVE")
 AGENT_DATA_CONSUMED = config.get("AGENT_DATA_CONSUMED")
+LLM_RECOMMENDATION_ROLE = config.get("LLM_RECOMMENDATION_ROLE")
 
 class AgentTools(MongoDBConnector):
     def __init__(self, collection_name: str = None, uri=None, database_name: str = None, appname: str = None):
@@ -319,6 +320,59 @@ class AgentTools(MongoDBConnector):
             state.setdefault("updates", []).append("No MongoDB collection set for persistence.")
             logger.info("No MongoDB collection set for persistence.")
             return {**state, "next_step": "recommendation_node"}
+        
+    def get_llm_recommendation(self, state: AgentState) -> AgentState:
+        state.setdefault("updates", []).append("Generating final recommendation...")
+        logger.info("[Final Answer] Generating final recommendation...")
+        
+        telemetry_data = state["telemetry_data"]
+        similar_issues = state["similar_issues_list"]
+        
+        if not telemetry_data:
+            state.setdefault("updates", []).append("No telemetry data; using default values.")
+            logger.warning("[Warning] No telemetry data available. Using default values.")
+            telemetry_data = [{
+                "timestamp": "2025-02-19T13:15:00Z",
+                "engine_temperature": "99",
+                "oil_pressure": "33",
+                "avg_fuel_consumption": "8.8"
+            }]
+        critical_conditions = []
+        
+        for record in telemetry_data:
+            try:
+                engine_temp = float(record["engine_temperature"])
+                oil_pressure = float(record["oil_pressure"])
+                if engine_temp > 100:
+                    critical_conditions.append(f"Critical engine temperature: {engine_temp}°C")
+                if oil_pressure < 30:
+                    critical_conditions.append(f"Low oil pressure: {oil_pressure} PSI")
+            except (ValueError, KeyError) as e:
+                logger.error(f"[Warning] Error parsing telemetry values: {e}")
+        critical_info = "CRITICAL ALERT: " + ", ".join(critical_conditions) + "\n\n" if critical_conditions else ""
+
+        # Generate the LLM recommendation prompt
+        LLM_RECOMMENDATION_PROMPT = get_llm_recommendation_prompt(
+            critical_info=critical_info,
+            telemetry_data=telemetry_data,
+            similar_issues=similar_issues
+        )
+        logger.info("LLM Recommendation Prompt:")
+        logger.info(LLM_RECOMMENDATION_PROMPT)
+
+        try:
+            # Instantiate the chat completion model
+            chat_completions = BedrockAnthropicChatCompletions()
+            # Generate a chain of thought based on the prompt
+            llm_recommendation = chat_completions.predict(LLM_RECOMMENDATION_PROMPT)
+        except Exception as e:
+            logger.error(f"Error generating LLM recommendation: {e}")
+            llm_recommendation = "Unable to generate recommendation at this time."
+
+        logger.info("LLM Recommendation:")
+        logger.info(llm_recommendation)
+        state.setdefault("updates", []).append("Final recommendation generated.")
+
 
 
 
@@ -382,39 +436,6 @@ if __name__ == "__main__":
     state = {}
     state["issue_report"] = "My vehicle's fuel consumption has increased significantly over the past week. What might be wrong with the engine or fuel system?"
     state["thread_id"] = "123"
-
-    # Get data from CSV
-    # csv_data = AgentTools()
-    # r = csv_data.get_data_from_csv(state)
-    # print(r)
-
-    # # Get data from MongoDB
-    # mdb_data = AgentTools(collection_name=MDB_TIMESERIES_COLLECTION)
-    # r = mdb_data.get_data_from_mdb(state)
-    # print(r)
-
-    # # Perform vector search
-    # state["embedding_key"] = "issue_embedding"
-
-    # print("Query Text:")
-    # print(query_txt)
-
-    # # Instantiate the Embedder
-    # embedder = Embedder()
-    # query_embedded = embedder.get_embedding(query_txt)
-    # state["embedding_vector"] = query_embedded
-    # mdb_vector = AgentTools(collection_name=MDB_EMBEDDINGS_COLLECTION)
-    # r = mdb_vector.vector_search(state)
-
-    # for issue in r["similar_issues"]:
-    #     print("Similar Issue:")
-    #     print(issue["issue"])
-    #     print("Recommendation:")
-    #     print(issue["recommendation"])
-
-    # Generate chain of thought
-    # state["issue_report"] = query_txt
-    # state = AgentTools.generate_chain_of_thought(state)
 
     # get_query_embedding
     state = AgentTools.get_query_embedding(state)

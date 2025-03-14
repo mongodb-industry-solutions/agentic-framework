@@ -1,4 +1,6 @@
-def get_chain_of_thoughts_prompt(profile: str, rules: str, goals: str, issue_report: str, agent_motive: str, 
+# --- Define Prompt Generation Functions ---
+
+def get_chain_of_thoughts_prompt(profile: str, rules: str, goals: str, issue_report: str, agent_motive: str,
                                  agent_data_consumed: str, embedding_model_name: str, chat_completion_model_name: str) -> str:
     """
     Generate a prompt for the chain of thoughts reasoning.
@@ -35,4 +37,28 @@ def get_chain_of_thoughts_prompt(profile: str, rules: str, goals: str, issue_rep
         5. Use {chat_completion_model_name}'s ChatCompletion model to generate a final summary and recommendation.
         
         Please provide your chain-of-thought as a numbered list with explanations for each step.
+        """
+
+
+def get_llm_recommendation_prompt(critical_info: str, telemetry_data: str, similar_issues: str) -> str:
+    """
+    Generate a prompt for the LLM recommendation.
+
+    Args:
+        critical_info (str): Critical information for the vehicle maintenance advisor.
+        telemetry_data (str): Telemetry data for the vehicle.
+        similar_issues (str): Similar past issues for the vehicle.
+
+    Returns:
+        str: The prompt for the LLM recommendation
+    """
+
+    return f"""
+        You are a vehicle maintenance advisor.
+        {critical_info} 
+        
+        Given the following telemetry data and past similar issues, please analyze the data and recommend an immediate action (continue driving, pull off the road, or schedule maintenance) with a clear explanation.
+        
+        Telemetry Data: {telemetry_data}
+        Similar Past Issues: {similar_issues}
         """
