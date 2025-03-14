@@ -1,10 +1,13 @@
 from db.mdb import MongoDBConnector
 
-from langchain.agents import tool
+import datetime
 import logging
+
+from langchain.agents import tool
 
 from config.config_loader import ConfigLoader
 from config.prompts import get_chain_of_thoughts_prompt
+from utils import convert_objectids
 from bedrock.anthropic_chat_completions import BedrockAnthropicChatCompletions
 
 from loader import CSVLoader
@@ -13,6 +16,7 @@ import csv
 from agent_state_types import AgentState
 from embedder import Embedder
 from profiler import AgentProfiler
+from timeseries_collection_creator import TimeSeriesCollectionCreator
 
 from dotenv import load_dotenv
 
@@ -31,9 +35,11 @@ config = ConfigLoader()
 
 # Get configuration values
 CSV_DATA = config.get("CSV_DATA")
-MDB_DATA_COLLECTION = config.get("MDB_DATA_COLLECTION")
+MDB_TIMESERIES_COLLECTION = config.get("MDB_TIMESERIES_COLLECTION")
+MDB_TIMESERIES_TIMEFIELD = config.get("MDB_TIMESERIES_TIMEFIELD")
+MDB_TIMESERIES_GRANULARITY = config.get("MDB_TIMESERIES_GRANULARITY")
 CSV_TO_VECTORIZE = config.get("CSV_TO_VECTORIZE")
-MDB_VECTORS_COLLECTION = config.get("MDB_VECTORS_COLLECTION")
+MDB_EMBEDDINGS_COLLECTION = config.get("MDB_EMBEDDINGS_COLLECTION")
 MDB_VECTOR_SEARCH_INDEX = config.get("MDB_VECTOR_SEARCH_INDEX")
 AGENT_PROFILE_CHOSEN = config.get("AGENT_PROFILE_CHOSEN")
 EMBEDDINGS_MODEL_NAME = config.get("EMBEDDINGS_MODEL_NAME")
@@ -60,15 +66,15 @@ class AgentTools(MongoDBConnector):
                 f"AgentTools initialized for collection: {self.collection_name}")
         logger.info("AgentTools initialized")
 
-    def get_data_from_csv(self, state: dict) -> dict:
+    @staticmethod
+    def get_data_from_csv(state: dict) -> dict:
         "Reads data from a CSV file."
         message = "[Tool] Retrieved data from CSV file."
         logger.info(message)
 
         # Load CSV data
         # TODO: Probably not the best way to do this
-        csv_loader = CSVLoader(
-            filepath=CSV_DATA, collection_name=MDB_DATA_COLLECTION)
+        csv_loader = CSVLoader(filepath=CSV_DATA, collection_name=MDB_TIMESERIES_COLLECTION)
         csv_filepath = csv_loader.filepath
 
         data_records = []
@@ -76,9 +82,6 @@ class AgentTools(MongoDBConnector):
             reader = csv.DictReader(file)
             for row in reader:
                 data_records.append(row)
-
-        for record in data_records:
-            logger.info(record)
 
         state.setdefault("updates", []).append(message)
         return {"data": data_records, "thread_id": state.get("thread_id", "")}
@@ -162,6 +165,7 @@ class AgentTools(MongoDBConnector):
 
         return {"similar_issues": similar_issues}
 
+    @staticmethod
     def generate_chain_of_thought(state: AgentState) -> AgentState:
         """Generates the chain of thought for the agent.
 
@@ -200,7 +204,7 @@ class AgentTools(MongoDBConnector):
         except Exception as e:
             logger.error(f"Error generating chain of thought: {e}")
             chain_of_thought = (
-                "1. Consume  data.\n"
+                "1. Consume data.\n"
                 "2. Generate an embedding for the complaint.\n"
                 "3. Perform a vector search on past issues.\n"
                 "4. Persist data into MongoDB.\n"
@@ -211,6 +215,110 @@ class AgentTools(MongoDBConnector):
         logger.info(chain_of_thought)
         state.setdefault("updates", []).append("Chain-of-thought generated.")
         return {**state, "chain_of_thought": chain_of_thought, "next_step": "get_data_from_csv_tool"}
+    
+    def process_data(state: AgentState) -> AgentState:
+        """Processes the data.
+
+        Args:
+            state (AgentState): The agent state.
+
+        Returns:
+            AgentState: The updated agent state.
+        """
+        state.setdefault("updates", []).append("Data processed.")
+        state["next_step"] = "embedding_node"
+        return state
+
+    def get_query_embedding(state: AgentState) -> AgentState:
+        """Generates the query embedding.
+
+        Args:
+            state (AgentState): The agent state.
+
+        Returns:
+            AgentState: The updated agent state.
+        """
+        logger.info("[Action] Generating Query Embedding...")
+        state.setdefault("updates", []).append("Generating query embedding...")
+
+        # Get the query text
+        text = state["issue_report"]
+
+        try: 
+            # Instantiate the Embedder
+            embedder = Embedder()
+            embedding = embedder.get_embedding(text)
+            state.setdefault("updates", []).append("Query embedding generated!")
+            logger.info("Query embedding generated!")
+        except Exception as e:
+            logger.error(f"Error generating query embedding: {e}")
+            state.setdefault("updates", []).append("Error generating query embedding; using dummy vector.")
+            embedding = [0.0] * 1024
+        return {**state, "embedding_vector": embedding, "next_step": "vector_search_tool"}
+    
+    def process_vector_search(state: AgentState) -> AgentState:
+        """Processes the vector search results."""
+        state.setdefault("updates", []).append("Vector search results processed.")
+        state["next_step"] = "persistence_node"
+        return state
+    
+    def persist_data(self, state: AgentState) -> AgentState:
+        """Persists the data into MongoDB."""
+        state.setdefault("updates", []).append("Persisting data to MongoDB...")
+        logger.info("[Action] Persisting data to MongoDB...")
+
+        # Check if a collection is set
+        if self.collection is not None:
+            # Combined data to persist
+            combined_data = {
+                    "issue_report": state["issue_report"],
+                    "telemetry": state["telemetry_data"],
+                    "similar_issues": state["similar_issues_list"],
+                    "thread_id": state.get("thread_id", "")
+                }
+            try:
+                logger.info("Checking Time Series Collection...")
+                ts_coll_result = TimeSeriesCollectionCreator().create_timeseries_collection(
+                    collection_name=MDB_TIMESERIES_COLLECTION,
+                    time_field=MDB_TIMESERIES_TIMEFIELD,
+                    granularity=MDB_TIMESERIES_GRANULARITY
+                )
+                logger.info(ts_coll_result)
+
+                # Looping through data to persist
+                for record in combined_data["telemetry"]:
+                    try:
+                        record["timestamp"] = datetime.datetime.strptime(record["timestamp"], "%Y-%m-%dT%H:%M:%SZ")
+                    except Exception as e:
+                        logger.error("Error parsing timestamp:", e)
+                    record["thread_id"] = state.get("thread_id", "")
+                    # Convert ObjectIds to strings
+                    record = convert_objectids(record)
+                    # Insert the record
+                    self.collection.insert_one(record)
+                logger.info(f"[MongoDB] Data persisted in {self.collection_name} collection.")
+
+                logger.info("Getting logs collection...")
+                coll_logs = self.db["logs"]
+                logger.info("Generating log entry...")
+                log_entry = {
+                    "thread_id": state.get("thread_id", ""),
+                    "issue_report": combined_data["issue_report"],
+                    "similar_issues": combined_data["similar_issues"],
+                    "created_at": datetime.datetime.now(datetime.timezone.utc)
+                }
+                # Convert ObjectIds to strings
+                log_entry = convert_objectids(log_entry)
+                # Insert the record
+                coll_logs.insert_one(log_entry)
+                state.setdefault("updates", []).append("Data persisted to MongoDB.")
+            except Exception as e:
+                logger.error("Error persisting data to MongoDB:", e)
+                state.setdefault("updates", []).append("Error persisting data to MongoDB.")
+        else:
+            state.setdefault("updates", []).append("No MongoDB collection set for persistence.")
+            logger.info("No MongoDB collection set for persistence.")
+            return {**state, "next_step": "recommendation_node"}
 
 
 
@@ -218,45 +326,76 @@ class AgentTools(MongoDBConnector):
 @tool
 def get_data_from_csv_tool(state: dict) -> dict:
     "Reads data from a CSV file."
-    csv_data = AgentTools()
-    return csv_data.get_data_from_csv(state)
+    return AgentTools.get_data_from_csv(state)
 
 
 @tool
 def get_data_from_mdb_tool(state: dict) -> dict:
     "Reads data from a MongoDB collection."
-    mdb_data = AgentTools(collection_name=MDB_DATA_COLLECTION)
+    mdb_data = AgentTools(collection_name=MDB_TIMESERIES_COLLECTION)
     return mdb_data.get_data_from_mdb(state)
 
 
 @tool
 def vector_search_tool(state: dict) -> dict:
     """Performs a vector search in a MongoDB collection."""
-    mdb_vector = AgentTools(collection_name=MDB_VECTORS_COLLECTION)
+    mdb_vector = AgentTools(collection_name=MDB_EMBEDDINGS_COLLECTION)
     return mdb_vector.vector_search(state)
 
 
-tools = [get_data_from_csv_tool, get_data_from_mdb_tool, vector_search_tool]
+@tool
+def generate_chain_of_thought_tool(state: AgentState) -> AgentState:
+    """Generates the chain of thought for the agent."""
+    return AgentTools.generate_chain_of_thought(state)
+
+
+@tool
+def process_data_tool(state: AgentState) -> AgentState:
+    """Processes the data."""
+    return AgentTools.process_data(state)
+
+
+@tool
+def get_query_embedding_tool(state: AgentState) -> AgentState:
+    """Generates the query embedding."""
+    return AgentTools.get_query_embedding(state)
+
+
+@tool
+def process_vector_search_tool(state: AgentState) -> AgentState:
+    """Processes the vector search results."""
+    return AgentTools.process_vector_search(state)
+
+
+@tool
+def persist_data_tool(state: AgentState) -> AgentState:
+    """Persists the data into MongoDB."""
+    mdb_persist = AgentTools(collection_name=MDB_TIMESERIES_COLLECTION)
+    return mdb_persist.persist_data(state)
+
+# Define the list of tools
+tools = [get_data_from_csv_tool, get_data_from_mdb_tool, vector_search_tool, generate_chain_of_thought_tool, process_data_tool, get_query_embedding_tool, process_vector_search_tool, persist_data_tool]
 
 if __name__ == "__main__":
 
     # Example usage
-    state = {"thread_id": "123"}
+    state = {}
+    state["issue_report"] = "My vehicle's fuel consumption has increased significantly over the past week. What might be wrong with the engine or fuel system?"
+    state["thread_id"] = "123"
 
-    # # Get data from CSV
+    # Get data from CSV
     # csv_data = AgentTools()
     # r = csv_data.get_data_from_csv(state)
     # print(r)
 
     # # Get data from MongoDB
-    # mdb_data = AgentTools(collection_name=MDB_DATA_COLLECTION)
+    # mdb_data = AgentTools(collection_name=MDB_TIMESERIES_COLLECTION)
     # r = mdb_data.get_data_from_mdb(state)
     # print(r)
 
     # # Perform vector search
     # state["embedding_key"] = "issue_embedding"
 
-    query_txt = "My vehicle's fuel consumption has increased significantly over the past week. What might be wrong with the engine or fuel system?"
     # print("Query Text:")
     # print(query_txt)
 
@@ -264,7 +403,7 @@ if __name__ == "__main__":
     # embedder = Embedder()
     # query_embedded = embedder.get_embedding(query_txt)
     # state["embedding_vector"] = query_embedded
-    # mdb_vector = AgentTools(collection_name=MDB_VECTORS_COLLECTION)
+    # mdb_vector = AgentTools(collection_name=MDB_EMBEDDINGS_COLLECTION)
     # r = mdb_vector.vector_search(state)
 
     # for issue in r["similar_issues"]:
@@ -274,5 +413,9 @@ if __name__ == "__main__":
     #     print(issue["recommendation"])
 
     # Generate chain of thought
-    state["issue_report"] = query_txt
-    state = AgentTools.generate_chain_of_thought(state)
+    # state["issue_report"] = query_txt
+    # state = AgentTools.generate_chain_of_thought(state)
+
+    # get_query_embedding
+    state = AgentTools.get_query_embedding(state)
+    print(state)

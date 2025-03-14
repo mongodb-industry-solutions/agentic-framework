@@ -22,16 +22,16 @@ logger = logging.getLogger(__name__)
 # Load configuration
 config = ConfigLoader()
 # Get the MongoDB vectors collection name from the config
-MDB_VECTORS_COLLECTION = config.get("MDB_VECTORS_COLLECTION")
+MDB_EMBEDDINGS_COLLECTION = config.get("MDB_EMBEDDINGS_COLLECTION")
 
 
 class Embedder(MongoDBConnector):
-    def __init__(self, collection_name: str = MDB_VECTORS_COLLECTION, uri=None, database_name: str = None, appname: str = None):
+    def __init__(self, collection_name: str = MDB_EMBEDDINGS_COLLECTION, uri=None, database_name: str = None, appname: str = None):
         """
         Embedder class to generate embeddings for text data stored in MongoDB.
 
         Args:
-            collection_name (str, optional): Collection name. Default is MDB_VECTORS_COLLECTION.
+            collection_name (str, optional): Collection name. Default is MDB_EMBEDDINGS_COLLECTION.
             uri (str, optional): MongoDB URI. Default parent class value.
             database_name (str, optional): Database name. Default parent class value.
             appname (str, optional): Application name. Default parent class value.
@@ -40,7 +40,6 @@ class Embedder(MongoDBConnector):
         self.collection_name = collection_name
         self.collection = self.get_collection(self.collection_name)
         logger.info("Embedder initialized")
-        logger.info(f"Embedding documents in collection: {self.collection_name}")
 
     @staticmethod
     def get_embedding(text: str) -> BedrockCohereEnglishEmbeddings:
