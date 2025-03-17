@@ -13,7 +13,7 @@ from bedrock.anthropic_chat_completions import BedrockAnthropicChatCompletions
 from loader import CSVLoader
 import csv
 
-from agent_state_types import AgentState
+from agent_state import AgentState
 from embedder import Embedder
 from profiler import AgentProfiler
 from timeseries_coll_creator import TimeSeriesCollectionCreator
@@ -372,6 +372,19 @@ class AgentTools(MongoDBConnector):
 
         return {**state, "recommendation_text": llm_recommendation, "next_step": "end"}
 
+    # --- Conditional Routing ---
+    @staticmethod
+    def route_by_telemetry_severity(state: AgentState) -> str:
+        """Routes based on telemetry data severity.
+        If engine temperature is greater than 110, route to recommendation_node.
+        Otherwise, route to embedding_node
+        """
+        for record in state["telemetry_data"]:
+            if float(record["engine_temperature"]) > 110:
+                state.setdefault("updates", []).append("Critical engine temperature detected; bypassing normal flow.")
+                logger.warning("\n[Alert] Critical engine temperature detected, bypassing normal flow...")
+                return "recommendation_node"
+        return "embedding_node"
 
 
 
@@ -433,6 +446,11 @@ def get_llm_recommendation_tool(state: AgentState) -> AgentState:
     mdb_recommendation = AgentTools(collection_name=MDB_HISTORICAL_RECOMMENDATIONS_COLLECTION)
     return mdb_recommendation.get_llm_recommendation(state)
 
+
+@tool
+def route_by_telemetry_severity_tool(state: AgentState) -> AgentState:
+    """Routes based on telemetry data severity."""
+    return AgentTools.route_by_telemetry_severity(state)
 
 
 # Define the list of tools
