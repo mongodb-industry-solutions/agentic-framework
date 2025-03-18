@@ -101,9 +101,10 @@ async def run_agent(issue_report: str = Query(initial_query, description=initial
     thread_id = f"thread_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
     initial_state["thread_id"] = thread_id
     config = {"configurable": {"thread_id": thread_id}}
-    mongodb_saver = AgentCheckpointer.create_mongodb_saver()
     try:
         logger.info(f"Running agent for thread ID: {thread_id}")
+        mongodb_saver = AgentCheckpointer().create_mongodb_saver()
+        logger.debug(f"MDB_CHECKPOINTER_COLLECTION: {MDB_CHECKPOINTER_COLLECTION}")
         if mongodb_saver:
             with mongodb_saver as checkpointer:
                 workflow = create_workflow_graph(checkpointer=checkpointer)
@@ -114,17 +115,19 @@ async def run_agent(issue_report: str = Query(initial_query, description=initial
             final_state = workflow.invoke(initial_state, config=config)
             final_state = convert_objectids(final_state)
         final_state["thread_id"] = thread_id
+        
         try:
-            session_metadata = {
-                "thread_id": thread_id,
-                "issue_report": issue_report,
-                "created_at": datetime.datetime.now(datetime.timezone.utc),
-                "status": "completed",
-                "recommendation": final_state["recommendation_text"]
-            }
-            session_metadata = convert_objectids(session_metadata)
-            mdb_sessions_collection.insert_one(session_metadata)
-            return final_state
+            with MongoDBConnector() as connector: 
+                session_metadata = {
+                    "thread_id": thread_id,
+                    "issue_report": issue_report,
+                    "created_at": datetime.datetime.now(datetime.timezone.utc),
+                    "status": "completed",
+                    "recommendation": final_state["recommendation_text"]
+                }
+                session_metadata = convert_objectids(session_metadata)
+                connector.insert_one(collection_name=MDB_AGENT_SESSIONS_COLLECTION, document=session_metadata)
+                return final_state
         except Exception as e:
             logger.info(f"[MongoDB] Error storing session metadata: {e}")
             return final_state
@@ -132,19 +135,20 @@ async def run_agent(issue_report: str = Query(initial_query, description=initial
         logger.info(f"\n[Error] An error occurred during execution: {e}")
         logger.info(f"You can resume this session later using thread ID: {thread_id}")
         try:
-            session_metadata = {
-                "thread_id": thread_id,
-                "issue_report": issue_report,
-                "created_at": datetime.datetime.now(datetime.timezone.utc),
-                "status": "error",
-                "error_message": str(e)
-            }
-            session_metadata = convert_objectids(session_metadata)
-            mdb_sessions_collection.insert_one(session_metadata)
-            logger.info("[MongoDB] Error state recorded in session metadata")
+            with MongoDBConnector() as connector: 
+                session_metadata = {
+                    "thread_id": thread_id,
+                    "issue_report": issue_report,
+                    "created_at": datetime.datetime.now(datetime.timezone.utc),
+                    "status": "error",
+                    "error_message": str(e)
+                }
+                session_metadata = convert_objectids(session_metadata)
+                mdb_sessions_collection.insert_one(collection_name=MDB_AGENT_SESSIONS_COLLECTION, document=session_metadata)
+                logger.info("[MongoDB] Error state recorded in session metadata")
         except Exception as db_error:
                 logger.info(f"[MongoDB] Error storing session error state: {db_error}")
-    raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/resume-agent")

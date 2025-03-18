@@ -12,8 +12,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Connected Fleet Incident Advisor",
-  description: "This AI Agent listens to driver complaints and advises on next course of action",
+  title: "Agentic Framework Example - Incident Advisor",
+  description: "This AI Agent listens to complaints and advises on next course of action",
 };
 
 export default function RootLayout({ children }) {

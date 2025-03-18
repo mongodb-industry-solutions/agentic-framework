@@ -30,9 +30,8 @@ class AgentCheckpointer(MongoDBConnector):
         """
         super().__init__(uri, database_name, appname)
         self.database_name = database_name
-        self.checkpoint_collection_name = collection_name
+        self.checkpoint_collection_name = str(collection_name)
         self.writes_collection_name = collection_name + "_writes"
-        
         logger.info("AgentCheckpointer initialized")
 
     # --- Create MongoDB Saver ---
@@ -58,10 +57,21 @@ class AgentCheckpointer(MongoDBConnector):
             return None
         try:
             logger.info(f"[MongoDB] Initializing MongoDBSaver!")
-            return MongoDBSaver.from_conn_string(conn_string=mongo_uri, 
-                                                 db_name=self.database_name,
-                                                 checkpoint_collection_name=self.checkpoint_collection_name, 
-                                                 writes_collection_name=self.writes_collection_name)
+            logger.info(f"URI: {mongo_uri}, Database: {self.database_name}, Checkpoint Collection: {self.checkpoint_collection_name}, Writes Collection: {self.writes_collection_name}")
+            return MongoDBSaver.from_conn_string(
+                conn_string=mongo_uri,
+                db_name=self.database_name,
+                checkpoint_collection_name=self.checkpoint_collection_name,
+                writes_collection_name=self.writes_collection_name
+            )
         except Exception as e:
             logger.error(f"[MongoDB] Error initializing MongoDB saver: {e}")
             return None
+        
+
+
+if __name__ == "__main__":
+
+    # Example usage
+    mongodb_saver = AgentCheckpointer().create_mongodb_saver()
+    print(mongodb_saver)

@@ -4,6 +4,7 @@
     "INITIAL_QUERY_DESCRIPTION": "Issue report text",
     "CSV_DATA": "data/csv/telemetry_data.csv",
     "CSV_TO_VECTORIZE": "data/csv/issues.csv",
+    "MDB_DATABASE": "agentic_framework",
     "MDB_TIMESERIES_COLLECTION": "telemetry_data",
     "MDB_TIMESERIES_TIMEFIELD": "timestamp",
     "MDB_TIMESERIES_GRANULARITY": "minutes",
