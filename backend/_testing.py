@@ -5,8 +5,6 @@ from vector_search_idx_creator import VectorSearchIDXCreator
 from embedder import Embedder
 from agent_tools import AgentTools
 
-from langgraph.store.memory import po 
-
 
 # ==================
 # Example usage

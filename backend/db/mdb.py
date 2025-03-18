@@ -7,6 +7,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class MongoDBConnector:
+    """ MongoDBConnector class to connect to MongoDB. 
+    
+    Args:
+        uri (str, optional): MongoDB URI. Default is MONGODB_URI environment variable.
+        database_name (str, optional): Database name. Default is DATABASE_NAME environment variable.
+        appname (str, optional): Application name. Default is APP_NAME environment variable.
+        filepath (str, optional): Filepath. Default is None    
+    """
     _instance = None
 
     def __new__(cls, uri=None, database_name=None, collection_name=None, appname=None, filepath=None):

@@ -4,6 +4,15 @@ from agent_tools import get_data_from_csv_tool, vector_search_tool, generate_cha
 
 # --- Create LangGraph StateGraph ---
 def create_workflow_graph(checkpointer=None):
+    """
+    Create the LangGraph StateGraph for the agent workflow.
+
+    Args:
+        checkpointer (AgentCheckpointer, optional): AgentCheckpointer instance. Default is None.
+
+    Returns:
+        StateGraph: LangGraph StateGraph for the agent workflow
+    """
     graph = StateGraph(AgentState)
     graph.add_node("reasoning_node", generate_chain_of_thought_tool)
     graph.add_node("data_from_csv", get_data_from_csv_tool)

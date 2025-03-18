@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 # Load configuration
 config = ConfigLoader()
 MDB_EMBEDDINGS_COLLECTION = config.get("MDB_EMBEDDINGS_COLLECTION")
-MDB_VECTOR_SEARCH_INDEX = config.get("MDB_VECTOR_SEARCH_INDEX")
-MDB_VECTOR_SEARCH_FIELD = config.get("MDB_VECTOR_SEARCH_FIELD")
+MDB_VS_INDEX = config.get("MDB_VS_INDEX")
+MDB_EMBEDDINGS_COLLECTION_VS_FIELD = config.get("MDB_EMBEDDINGS_COLLECTION_VS_FIELD")
 
 class VectorSearchIDXCreator(MongoDBConnector):
     def __init__(self, collection_name: str = MDB_EMBEDDINGS_COLLECTION, uri=None, database_name: str = None, appname: str = None):
@@ -30,13 +30,13 @@ class VectorSearchIDXCreator(MongoDBConnector):
         self.collection = self.get_collection(self.collection_name)
         logger.info("VectorSearchIDXCreator initialized")
 
-    def create_index(self, index_name: str = MDB_VECTOR_SEARCH_INDEX, vector_field: str = MDB_VECTOR_SEARCH_FIELD, dimensions: int = 1024, similarity_metric: str = "cosine") -> dict:
+    def create_index(self, index_name: str = MDB_VS_INDEX, vector_field: str = MDB_EMBEDDINGS_COLLECTION_VS_FIELD, dimensions: int = 1024, similarity_metric: str = "cosine") -> dict:
         """
         Creates a vector search index on the MongoDB collection.
 
         Args:
-            index_name (str, optional): Index name. Default is MDB_VECTOR_SEARCH_INDEX.
-            vector_field (str, optional): Vector field name. Default is MDB_VECTOR_SEARCH_FIELD.
+            index_name (str, optional): Index name. Default is MDB_VS_INDEX.
+            vector_field (str, optional): Vector field name. Default is MDB_EMBEDDINGS_COLLECTION_VS_FIELD.
             dimensions (int, optional): Number of dimensions. Default is 1024.
             similarity_metric (str, optional): Similarity metric. Default is "cosine".
 

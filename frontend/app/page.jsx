@@ -16,7 +16,7 @@ import {
   Label,
 } from "@leafygreen-ui/typography";
 import Code from "@leafygreen-ui/code";
-import InfoWizard from "./components/InfoWizard";
+import InfoWizard from "@/components/InfoWizard/InfoWizard";
 
 
 export default function HomePage() {
@@ -42,7 +42,7 @@ export default function HomePage() {
   const runAgent = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/run-agent?issue_report=${encodeURIComponent(issue)}`);
+      const res = await fetch(`/run-agent?issue_report=${encodeURIComponent(issue)}`);
       const data = await res.json();
       setWorkflow(data);
     } catch (err) {
@@ -56,7 +56,7 @@ export default function HomePage() {
     if (!threadId) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/resume-agent?thread_id=${encodeURIComponent(threadId)}`);
+      const res = await fetch(`/resume-agent?thread_id=${encodeURIComponent(threadId)}`);
       const data = await res.json();
       setWorkflow(data);
     } catch (err) {
@@ -68,7 +68,7 @@ export default function HomePage() {
   // Get sessions for "list" view
   const getSessions = async () => {
     try {
-      const res = await fetch("/api/get-sessions");
+      const res = await fetch("/get-sessions");
       const data = await res.json();
       setSessions(data);
     } catch (err) {
@@ -81,7 +81,7 @@ export default function HomePage() {
     if (workflow && workflow.thread_id) {
       const fetchRunDocs = async () => {
         try {
-          const res = await fetch(`/api/get-run-documents?thread_id=${encodeURIComponent(workflow.thread_id)}`);
+          const res = await fetch(`/get-run-documents?thread_id=${encodeURIComponent(workflow.thread_id)}`);
           const data = await res.json();
           setRunDocuments(data);
         } catch (err) {

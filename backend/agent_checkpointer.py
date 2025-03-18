@@ -40,6 +40,15 @@ class AgentCheckpointer(MongoDBConnector):
         """
         Create a MongoDBSaver instance to save agent states to MongoDB."
 
+        Uses:
+            - MongoDBSaver.from_conn_string()
+
+        Params:
+            conn_string (str): MongoDB connection string. Takes the value from parent class.
+            db_name (str): Database name. Takes the value from parent class.
+            checkpoint_collection_name (str): Checkpointer collection name. Default is MDB_CHECKPOINTER_COLLECTION.
+            writes_collection_name (str): Writes collection name. Default is MDB_CHECKPOINTER_COLLECTION + "_writes".
+
         Returns:
             MongoDBSaver: MongoDBSaver instance to save agent states to MongoDB.
         """
