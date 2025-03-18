@@ -8,7 +8,7 @@ export async function GET(request) {
           { status: 400, headers: { "Content-Type": "application/json" } }
         );
       }
-      const apiUrl = process.env.NEXT_PUBLIC_DEMONAME_API_URL;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const apiEndpoint = `${apiUrl}/get-run-documents?thread_id=${encodeURIComponent(thread_id)}`;
       const res = await fetch(apiEndpoint);
       const data = await res.json();

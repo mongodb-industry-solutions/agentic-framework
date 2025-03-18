@@ -6,27 +6,38 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+
 class MongoDBConnector:
-    _instance = None
+    """ MongoDBConnector class to connect to MongoDB. 
 
-    def __new__(cls, uri=None, database_name=None, collection_name=None, appname=None, filepath=None):
-        """ Singleton instance to ensure only one connection to MongoDB. """
-
-        if not cls._instance:
-            cls._instance = super(MongoDBConnector, cls).__new__(cls)
-            cls._instance.uri = uri or os.getenv("MONGODB_URI")
-            cls._instance.database_name = database_name or os.getenv("DATABASE_NAME")
-            cls._instance.appname = appname or os.getenv("APP_NAME")
-            cls._instance.filepath = filepath
-            cls._instance.collection_name = collection_name
-            cls._instance.client = MongoClient(cls._instance.uri, appname=cls._instance.appname)
-            cls._instance.db = cls._instance.client[cls._instance.database_name]
-            cls._instance._initialized = True
-        return cls._instance
+    Args:
+        uri (str, optional): MongoDB URI. Default is MONGODB_URI environment variable.
+        database_name (str, optional): Database name. Default is DATABASE_NAME environment variable.
+        appname (str, optional): Application name. Default is APP_NAME environment variable.
+        filepath (str, optional): Filepath. Default is None    
+    """
 
     def __init__(self, uri=None, database_name=None, collection_name=None, appname=None, filepath=None):
-        """ Prevent reinitialization in the singleton. """
-        pass
+        self.uri = uri or os.getenv("MONGODB_URI")
+        self.database_name = database_name or os.getenv("DATABASE_NAME")
+        self.appname = appname or os.getenv("APP_NAME")
+        self.filepath = filepath
+        self.collection_name = collection_name
+        self.client = MongoClient(self.uri, appname=self.appname)
+        self.db = self.client[self.database_name]
+
+    def __enter__(self):
+        """Enter the runtime context related to this object."""
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Exit the runtime context and close the MongoDB connection."""
+        self.close_connection()
+
+    def close_connection(self):
+        """Close the MongoDB connection."""
+        if self.client:
+            self.client.close()
 
     @abstractmethod
     def run(self, **kwargs):
@@ -40,42 +51,42 @@ class MongoDBConnector:
         collection_name = collection_name
         return self.db[collection_name]
 
-    def insert_one(self, collection_name, document):
+    def insert_one(self, collection_name: str, document):
         """Insert a single document into a collection."""
         collection = self.get_collection(collection_name)
         result = collection.insert_one(document)
         return result.inserted_id
 
-    def insert_many(self, collection_name, documents):
+    def insert_many(self, collection_name: str, documents):
         """Insert multiple documents into a collection."""
         collection = self.get_collection(collection_name)
         result = collection.insert_many(documents)
         return result.inserted_ids
 
-    def find(self, collection_name, query={}, projection=None):
+    def find(self, collection_name: str, query={}, projection=None):
         """Retrieve documents from a collection."""
         collection = self.get_collection(collection_name)
         return list(collection.find(query, projection))
 
-    def update_one(self, collection_name, query, update, upsert=False):
+    def update_one(self, collection_name: str, query, update, upsert=False):
         """Update a single document in a collection."""
         collection = self.get_collection(collection_name)
         result = collection.update_one(query, update, upsert=upsert)
         return result.modified_count
 
-    def update_many(self, collection_name, query, update, upsert=False):
+    def update_many(self, collection_name: str, query, update, upsert=False):
         """Update multiple documents in a collection."""
         collection = self.get_collection(collection_name)
         result = collection.update_many(query, update, upsert=upsert)
         return result.modified_count
 
-    def delete_one(self, collection_name, query):
+    def delete_one(self, collection_name: str, query):
         """Delete a single document from a collection."""
         collection = self.get_collection(collection_name)
         result = collection.delete_one(query)
         return result.deleted_count
 
-    def delete_many(self, collection_name, query):
+    def delete_many(self, collection_name: str, query):
         """Delete multiple documents from a collection."""
         collection = self.get_collection(collection_name)
         result = collection.delete_many(query)

@@ -16,12 +16,12 @@ import {
   Label,
 } from "@leafygreen-ui/typography";
 import Code from "@leafygreen-ui/code";
-import InfoWizard from "./components/InfoWizard";
+import InfoWizard from "@/components/InfoWizard/InfoWizard";
 
 
 export default function HomePage() {
   const [selectedOption, setSelectedOption] = useState("new"); // "new", "resume", or "list"
-  const [issue, setIssue] = useState("My vehicle’s fuel consumption has increased significantly over the past week. What might be wrong with the engine or fuel system?");
+  const [issue, setIssue] = useState("My vehicle's fuel consumption has increased significantly over the past week. What might be wrong with the engine or fuel system?");
   const [threadId, setThreadId] = useState("");
   const [workflow, setWorkflow] = useState(null);
   const [sessions, setSessions] = useState(null);
@@ -42,7 +42,7 @@ export default function HomePage() {
   const runAgent = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/run-agent?issue_report=${encodeURIComponent(issue)}`);
+      const res = await fetch(`/run-agent?issue_report=${encodeURIComponent(issue)}`);
       const data = await res.json();
       setWorkflow(data);
     } catch (err) {
@@ -56,7 +56,7 @@ export default function HomePage() {
     if (!threadId) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/resume-agent?thread_id=${encodeURIComponent(threadId)}`);
+      const res = await fetch(`/resume-agent?thread_id=${encodeURIComponent(threadId)}`);
       const data = await res.json();
       setWorkflow(data);
     } catch (err) {
@@ -68,7 +68,7 @@ export default function HomePage() {
   // Get sessions for "list" view
   const getSessions = async () => {
     try {
-      const res = await fetch("/api/get-sessions");
+      const res = await fetch("/get-sessions");
       const data = await res.json();
       setSessions(data);
     } catch (err) {
@@ -81,7 +81,7 @@ export default function HomePage() {
     if (workflow && workflow.thread_id) {
       const fetchRunDocs = async () => {
         try {
-          const res = await fetch(`/api/get-run-documents?thread_id=${encodeURIComponent(workflow.thread_id)}`);
+          const res = await fetch(`/get-run-documents?thread_id=${encodeURIComponent(workflow.thread_id)}`);
           const data = await res.json();
           setRunDocuments(data);
         } catch (err) {
@@ -189,8 +189,8 @@ export default function HomePage() {
       </div>
     <div style={{ padding: "20px", fontFamily: "Arial, sans-serif", width: "100%" }}>
         
-      <H1 style={{ marginBottom: "5px" }}>Connected Fleet Incident Advisor </H1>
-      <Body>The Connected Fleet Advisor Demo showcases an AI-driven diagnostic system for vehicles. It implements a multi-step diagnostic workflow using <b>LangGraph</b>. The backend reads telemetry data from a CSV file (simulating vehicle sensor inputs), generates text embeddings using <b>Voyage AI</b> voyage-3-large model, performs vector searches to identify similar past issues using <b>MongoDB Atlas Vector Search</b>, persists session and run data, and finally generates a diagnostic recommendation. <b>MongoDB</b> stores agent profiles, historical recommendations, telemetry data, session logs, and more. This persistent storage not only logs every step of the diagnostic process for traceability but also enables efficient querying and reusability of past data.</Body>
+      <H1 style={{ marginBottom: "5px" }}>Agentic Framework Example - Incident Advisor</H1>
+      <Body>The Agentic Framework Example - Incident Advisor Demo showcases an AI-driven diagnostic system for vehicles. It implements a multi-step diagnostic workflow using <b>LangGraph</b>. The backend reads telemetry data from a CSV file (simulating vehicle sensor inputs), generates text embeddings using <b>Voyage AI</b> voyage-3-large model, performs vector searches to identify similar past issues using <b>MongoDB Atlas Vector Search</b>, persists session and run data, and finally generates a diagnostic recommendation. <b>MongoDB</b> stores agent profiles, historical recommendations, telemetry data, session logs, and more. This persistent storage not only logs every step of the diagnostic process for traceability but also enables efficient querying and reusability of past data.</Body>
       <H3 style={{ marginBottom: "20px", marginTop: "20px"  }}>Please choose one of the following options </H3>
 
       {/* Option Buttons */}

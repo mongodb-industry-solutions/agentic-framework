@@ -1,4 +1,3 @@
-// app/api/resume-agent/route.js
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const thread_id = searchParams.get("thread_id");
@@ -6,7 +5,9 @@ export async function GET(request) {
     return new Response(JSON.stringify({ error: "thread_id is required" }), { status: 400 });
   }
   try {
-    const res = await fetch(`http://localhost:8000/api/resume-agent?thread_id=${encodeURIComponent(thread_id)}`);
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    const apiEndpoint = `${apiUrl}/resume-agent?thread_id=${encodeURIComponent(thread_id)}`;
+    const res = await fetch(apiEndpoint);
     const data = await res.json();
     return new Response(JSON.stringify(data), {
       status: 200,

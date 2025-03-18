@@ -40,7 +40,7 @@ MDB_TIMESERIES_TIMEFIELD = config.get("MDB_TIMESERIES_TIMEFIELD")
 MDB_TIMESERIES_GRANULARITY = config.get("MDB_TIMESERIES_GRANULARITY")
 CSV_TO_VECTORIZE = config.get("CSV_TO_VECTORIZE")
 MDB_EMBEDDINGS_COLLECTION = config.get("MDB_EMBEDDINGS_COLLECTION")
-MDB_VECTOR_SEARCH_INDEX = config.get("MDB_VECTOR_SEARCH_INDEX")
+MDB_VS_INDEX = config.get("MDB_VS_INDEX")
 AGENT_PROFILE_CHOSEN = config.get("AGENT_PROFILE_CHOSEN")
 EMBEDDINGS_MODEL_NAME = config.get("EMBEDDINGS_MODEL_NAME")
 CHATCOMPLETIONS_MODEL_NAME = config.get("CHATCOMPLETIONS_MODEL_NAME")
@@ -131,7 +131,7 @@ class AgentTools(MongoDBConnector):
                 pipeline = [
                     {
                         "$vectorSearch": {
-                            "index": MDB_VECTOR_SEARCH_INDEX,
+                            "index": MDB_VS_INDEX,
                             "path": embedding_key,
                             "queryVector": embedding,
                             "numCandidates": 5,
