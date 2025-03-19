@@ -54,11 +54,11 @@ def get_llm_recommendation_prompt(critical_info: str, telemetry_data: str, simil
     """
 
     return f"""
-        You are a vehicle maintenance advisor.
-        {critical_info} 
+        You are a vehicle maintenance advisor. {critical_info} 
         
         Given the following telemetry data and past similar issues, please analyze the data and recommend an immediate action (continue driving, pull off the road, or schedule maintenance) with a clear explanation.
         
         Telemetry Data: {telemetry_data}
+
         Similar Past Issues: {similar_issues}
         """

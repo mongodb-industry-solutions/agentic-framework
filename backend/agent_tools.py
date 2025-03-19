@@ -56,6 +56,7 @@ class AgentTools(MongoDBConnector):
         self.mdb_embeddings_collection = self.config.get("MDB_EMBEDDINGS_COLLECTION")
         self.mdb_embeddings_collection_vs_field = self.config.get("MDB_EMBEDDINGS_COLLECTION_VS_FIELD")
         self.mdb_vs_index = self.config.get("MDB_VS_INDEX")
+        self.similar_issues_records = self.config.get("SIMILAR_ISSUES_RECORDS")
         self.mdb_agent_profiles_collection = self.config.get("MDB_AGENT_PROFILES_COLLECTION")
         self.agent_profile_chosen_id = self.config.get("AGENT_PROFILE_CHOSEN_ID")
         self.embeddings_model_id = self.config.get("EMBEDDINGS_MODEL_ID")
@@ -89,7 +90,7 @@ class AgentTools(MongoDBConnector):
                 data_records.append(row)
 
         state.setdefault("updates", []).append(message)
-        return {"data": data_records, "thread_id": state.get("thread_id", "")}
+        return {"telemetry_data": data_records, "thread_id": state.get("thread_id", "")}
 
     def get_data_from_mdb(self, state: dict) -> dict:
         "Reads data from a MongoDB collection."
@@ -101,7 +102,7 @@ class AgentTools(MongoDBConnector):
             data_records.append(record)
 
         state.setdefault("updates", []).append(message)
-        return {"data": data_records, "thread_id": state.get("thread_id", "")}
+        return {"telemetry_data": data_records, "thread_id": state.get("thread_id", "")}
 
     def vector_search(self, state: dict) -> dict:
         """Performs a vector search in a MongoDB collection."""
@@ -121,12 +122,8 @@ class AgentTools(MongoDBConnector):
         # Get the embedding vector from the state
         embedding = state.get("embedding_vector", [])
         # Similar data records
-        similar_issues = [
-            {"issue": "Engine knocking when turning",
-                "recommendation": "Inspect spark plugs and engine oil."},
-            {"issue": "Suspension noise under load",
-                "recommendation": "Check suspension components for wear."}
-        ]
+        logger.info(f"Setting similar issues from config file...")
+        similar_issues = self.similar_issues_records
 
         try:
             # Perform vector search
@@ -147,28 +144,27 @@ class AgentTools(MongoDBConnector):
             # Format the results
             for result in results:
                 if "_id" in result:
-                    result["_id"] = str(result["_id"])
+                    # result["_id"] = str(result["_id"])
+                    # It's not necessary to process the _id field, so removing it!
+                    del result["_id"]
+                if self.mdb_embeddings_collection_vs_field in result:
+                    # Removing the embedding field from the results
+                    del result[self.mdb_embeddings_collection_vs_field]
             if results:
-                logger.info(
-                    f"[MongoDB] Retrieved similar data from vector search.")
-                state.setdefault("updates", []).append(
-                    "[MongoDB] Retrieved similar data.")
+                logger.info(f"[MongoDB] Retrieved similar data from vector search.")
+                state.setdefault("updates", []).append("[MongoDB] Retrieved similar data.")
                 similar_issues = results
+                logger.info(f"Similar issues - Vector Search results: {similar_issues}")
             else:
-                logger.info(
-                    f"[MongoDB] No similar data found. Returning default message.")
-                state.setdefault("updates", []).append(
-                    "[MongoDB] No similar data found.")
-                similar_issues = [{"issue": "No similar issues found",
-                                   "recommendation": "No immediate action based on past data."}]
+                logger.info(f"[MongoDB] No similar data found. Returning default message.")
+                state.setdefault("updates", []).append("[MongoDB] No similar data found.")
+                similar_issues = [{"issue": "No similar issues found", "recommendation": "No immediate action based on past data."}]
         except Exception as e:
             logger.error(f"Error during MongoDB Vector Search operation: {e}")
-            state.setdefault("updates", []).append(
-                "[MongoDB] Error during Vector Search operation.")
-            similar_issues = [{"issue": "MongoDB Vector Search operation error",
-                               "recommendation": "Please try again later."}]
+            state.setdefault("updates", []).append("[MongoDB] Error during Vector Search operation.")
+            similar_issues = [{"issue": "MongoDB Vector Search operation error", "recommendation": "Please try again later."}]
 
-        return {"similar_issues": similar_issues}
+        return {"similar_issues_list": similar_issues}
 
     def generate_chain_of_thought(self, state: AgentState) -> AgentState:
         """Generates the chain of thought for the agent."""
@@ -274,6 +270,10 @@ class AgentTools(MongoDBConnector):
                 for record in combined_data["telemetry"]:
                     try:
                         record["timestamp"] = datetime.datetime.strptime(record["timestamp"], "%Y-%m-%dT%H:%M:%SZ")
+                        # Convert values to float
+                        record["engine_temperature"] = float(record["engine_temperature"])
+                        record["oil_pressure"] = float(record["oil_pressure"])
+                        record["avg_fuel_consumption"] = float(record["avg_fuel_consumption"])
                     except Exception as e:
                         logger.error("Error parsing timestamp:", e)
                     record["thread_id"] = state.get("thread_id", "")
