@@ -48,8 +48,6 @@ class CSVLoader(MongoDBConnector):
         self.delimiter = delimiter
         self.encoding = encoding
 
-        logger.info("CSVLoader initialized")
-
     def load(self) -> pd.DataFrame:
         """
         Load the CSV file into a Pandas DataFrame.

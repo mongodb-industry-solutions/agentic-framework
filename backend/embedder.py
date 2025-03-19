@@ -38,7 +38,6 @@ class Embedder(MongoDBConnector):
         MDB_EMBEDDINGS_COLLECTION = config.get("MDB_EMBEDDINGS_COLLECTION")
         self.collection_name = collection_name or MDB_EMBEDDINGS_COLLECTION
         self.collection = self.get_collection(self.collection_name)
-        logger.info("Embedder initialized")
 
     @staticmethod
     def get_embedding(text: str) -> BedrockCohereEnglishEmbeddings:
