@@ -21,8 +21,10 @@ class AgentState(TypedDict):
     similar_issues_list: List[SimilarIssue]
     recommendation_text: str
     next_step: Literal[
-        "reasoning_node", "data_from_csv", "embedding_node",
-        "vector_search", "persistence_node", "recommendation_node", "end"
+        "__start__", "start", 
+        "reasoning_node", "data_from_csv", "process_data", "embedding_node", 
+        "vector_search", "process_vector_search", "persistence_node", "recommendation_node", 
+        "__end__", "end"
     ]
     updates: List[str]
     thread_id: Optional[str]

@@ -2,9 +2,13 @@ import os
 from pymongo import MongoClient
 from abc import abstractmethod
 from dotenv import load_dotenv
+from config.config_loader import ConfigLoader
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Load configuration
+config = ConfigLoader()
 
 
 class MongoDBConnector:
@@ -12,14 +16,15 @@ class MongoDBConnector:
 
     Args:
         uri (str, optional): MongoDB URI. Default is MONGODB_URI environment variable.
-        database_name (str, optional): Database name. Default is DATABASE_NAME environment variable.
+        database_name (str, optional): Database name. Default is MDB_DATABASE_NAME.
+        collection_name (str, optional): Collection name. Default is None.
         appname (str, optional): Application name. Default is APP_NAME environment variable.
-        filepath (str, optional): Filepath. Default is None    
+        filepath (str, optional): File path. Default is None.
     """
 
     def __init__(self, uri=None, database_name=None, collection_name=None, appname=None, filepath=None):
         self.uri = uri or os.getenv("MONGODB_URI")
-        self.database_name = database_name or os.getenv("DATABASE_NAME")
+        self.database_name = database_name or str(config.get("MDB_DATABASE_NAME"))
         self.appname = appname or os.getenv("APP_NAME")
         self.filepath = filepath
         self.collection_name = collection_name

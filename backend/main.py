@@ -29,23 +29,22 @@ load_dotenv()
 # Load configuration
 config = ConfigLoader()
 # Get configuration values
+# MongoDB URI
+MDB_URI = os.getenv("MONGODB_URI")
+# Database
+MDB_DATABASE_NAME = config.get("MDB_DATABASE_NAME")
 # Collections
 MDB_HISTORICAL_RECOMMENDATIONS_COLLECTION = config.get("MDB_HISTORICAL_RECOMMENDATIONS_COLLECTION")
-mdb_historical_recommendations_collection = MongoDBConnector(collection_name=MDB_HISTORICAL_RECOMMENDATIONS_COLLECTION)
 MDB_AGENT_SESSIONS_COLLECTION = config.get("MDB_AGENT_SESSIONS_COLLECTION")
-mdb_sessions_collection = MongoDBConnector(collection_name=MDB_AGENT_SESSIONS_COLLECTION)
 MDB_EMBEDDINGS_COLLECTION = config.get("MDB_EMBEDDINGS_COLLECTION")
-mdb_embeddings_collection = MongoDBConnector(collection_name=MDB_EMBEDDINGS_COLLECTION)
-mdb_embeddings_collection_past = MongoDBConnector(collection_name="past_" + MDB_EMBEDDINGS_COLLECTION)
+MDB_EMBEDDINGS_COLLECTION_PAST = "past_" + MDB_EMBEDDINGS_COLLECTION
 MDB_TIMESERIES_COLLECTION = config.get("MDB_TIMESERIES_COLLECTION")
-mdb_timeseries_collection = MongoDBConnector(collection_name=MDB_TIMESERIES_COLLECTION)
 MDB_LOGS_COLLECTION = config.get("MDB_LOGS_COLLECTION")
-mdb_logs_collection = MongoDBConnector(collection_name=MDB_LOGS_COLLECTION)
 MDB_AGENT_PROFILES_COLLECTION = config.get("MDB_AGENT_PROFILES_COLLECTION")
-mdb_agent_profiles_collection = MongoDBConnector(collection_name=MDB_AGENT_PROFILES_COLLECTION)
+AGENT_PROFILE_CHOSEN_ID = config.get("AGENT_PROFILE_CHOSEN_ID")
 # Checkpointer
 MDB_CHECKPOINTER_COLLECTION = config.get("MDB_CHECKPOINTER_COLLECTION")
-mdb_checkpoint_collection = MongoDBConnector(collection_name=MDB_CHECKPOINTER_COLLECTION)
+MDB_CHECKPOINTER_WRITES = MDB_CHECKPOINTER_COLLECTION + "_writes"
 # Query
 initial_query = config.get("INITIAL_QUERY")
 initial_query_description = config.get("INITIAL_QUERY_DESCRIPTION")
@@ -103,8 +102,7 @@ async def run_agent(issue_report: str = Query(initial_query, description=initial
     config = {"configurable": {"thread_id": thread_id}}
     try:
         logger.info(f"Running agent for thread ID: {thread_id}")
-        mongodb_saver = AgentCheckpointer().create_mongodb_saver()
-        logger.debug(f"MDB_CHECKPOINTER_COLLECTION: {MDB_CHECKPOINTER_COLLECTION}")
+        mongodb_saver = AgentCheckpointer(database_name=MDB_DATABASE_NAME, collection_name=MDB_CHECKPOINTER_COLLECTION).create_mongodb_saver()
         if mongodb_saver:
             with mongodb_saver as checkpointer:
                 workflow = create_workflow_graph(checkpointer=checkpointer)
@@ -117,7 +115,7 @@ async def run_agent(issue_report: str = Query(initial_query, description=initial
         final_state["thread_id"] = thread_id
         
         try:
-            with MongoDBConnector() as connector: 
+            with MongoDBConnector(uri=MDB_URI, database_name=MDB_DATABASE_NAME) as mdb_connector: 
                 session_metadata = {
                     "thread_id": thread_id,
                     "issue_report": issue_report,
@@ -126,16 +124,16 @@ async def run_agent(issue_report: str = Query(initial_query, description=initial
                     "recommendation": final_state["recommendation_text"]
                 }
                 session_metadata = convert_objectids(session_metadata)
-                connector.insert_one(collection_name=MDB_AGENT_SESSIONS_COLLECTION, document=session_metadata)
+                mdb_connector.insert_one(collection_name=MDB_AGENT_SESSIONS_COLLECTION, document=session_metadata)
                 return final_state
         except Exception as e:
             logger.info(f"[MongoDB] Error storing session metadata: {e}")
             return final_state
     except Exception as e:
-        logger.info(f"\n[Error] An error occurred during execution: {e}")
+        logger.info(f"[Error] An error occurred during execution: {e}")
         logger.info(f"You can resume this session later using thread ID: {thread_id}")
         try:
-            with MongoDBConnector() as connector: 
+            with MongoDBConnector(uri=MDB_URI, database_name=MDB_DATABASE_NAME) as mdb_connector: 
                 session_metadata = {
                     "thread_id": thread_id,
                     "issue_report": issue_report,
@@ -144,7 +142,7 @@ async def run_agent(issue_report: str = Query(initial_query, description=initial
                     "error_message": str(e)
                 }
                 session_metadata = convert_objectids(session_metadata)
-                mdb_sessions_collection.insert_one(collection_name=MDB_AGENT_SESSIONS_COLLECTION, document=session_metadata)
+                mdb_connector.insert_one(collection_name=MDB_AGENT_SESSIONS_COLLECTION, document=session_metadata)
                 logger.info("[MongoDB] Error state recorded in session metadata")
         except Exception as db_error:
                 logger.info(f"[MongoDB] Error storing session error state: {db_error}")
@@ -165,8 +163,10 @@ async def resume_agent(thread_id: str = Query(..., description="Thread ID to res
         session: The session to resume.
     """
     try:
-        logger.info(f"Resuming agent for thread ID: {thread_id}")
-        session = mdb_sessions_collection.find_one({"thread_id": thread_id})
+        with MongoDBConnector(uri=MDB_URI, database_name=MDB_DATABASE_NAME) as mdb_connector: 
+            mdb_sessions_collection = mdb_connector.get_collection(MDB_AGENT_SESSIONS_COLLECTION)
+            logger.info(f"Resuming agent for thread ID: {thread_id}")
+            session = mdb_sessions_collection.find_one({"thread_id": thread_id})
         if session:
             session = convert_objectids(session)
             return session
@@ -187,7 +187,9 @@ async def get_sessions():
         HTTPException
     """
     try:
-        sessions = list(mdb_sessions_collection.find().sort("created_at", -1).limit(10))
+        with MongoDBConnector(uri=MDB_URI, database_name=MDB_DATABASE_NAME) as mdb_connector:
+            mdb_sessions_collection = mdb_connector.get_collection(MDB_AGENT_SESSIONS_COLLECTION)
+            sessions = list(mdb_sessions_collection.find().sort("created_at", -1).limit(10))
         sessions = convert_objectids(sessions)
         return sessions
     except Exception as e:
@@ -210,33 +212,49 @@ async def get_run_documents(thread_id: str = Query(..., description="Thread ID o
         # For collections where thread_id is stored with extra characters, use regex to find the right data
         query = {"thread_id": {"$regex": f"^{thread_id}"}}
 
-        # Retrieve agent_sessions document
-        session = mdb_sessions_collection.find_one(query)
+        # Retrieve documents
+        logger.info(f"Retrieving documents for thread ID: {thread_id}")
+        with MongoDBConnector(uri=MDB_URI, database_name=MDB_DATABASE_NAME) as mdb_connector:
+            mdb_historical_recommendations_collection = mdb_connector.get_collection(MDB_HISTORICAL_RECOMMENDATIONS_COLLECTION)
+            mdb_agent_sessions_collection = mdb_connector.get_collection(MDB_AGENT_SESSIONS_COLLECTION)
+            mdb_timeseries_collection = mdb_connector.get_collection(MDB_TIMESERIES_COLLECTION)
+            mdb_logs_collection = mdb_connector.get_collection(MDB_LOGS_COLLECTION)
+            mdb_agent_profiles_collection = mdb_connector.get_collection(MDB_AGENT_PROFILES_COLLECTION)
+            mdb_embeddings_collection_past = mdb_connector.get_collection(MDB_EMBEDDINGS_COLLECTION_PAST)
+            mdb_checkpoint_collection = mdb_connector.get_collection(MDB_CHECKPOINTER_COLLECTION)
+        
+            # Retrieve agent_sessions document
+            session = mdb_agent_sessions_collection.find_one(query)
+
+            # Retrieve historical_recommendations for the run
+            historical = mdb_historical_recommendations_collection.find_one(query)
+
+            # Retrieve telemetry_data for the run
+            telemetry = mdb_timeseries_collection.find_one(query)
+
+            # Retrieve logs for the run
+            log = mdb_logs_collection.find_one(query)
+
+            # Retrieve the agent profile
+            chosen_agent_id = AGENT_PROFILE_CHOSEN_ID or "DEFAULT"
+            profile = mdb_agent_profiles_collection.find_one({"agent_id": chosen_agent_id})
+
+            # Retrieve one sample past_issues document (most recent)
+            past_issue = mdb_embeddings_collection_past.find_one(sort=[("created_at", -1)])
+
+            # Retrieve the last checkpoint
+            last_checkpoint = mdb_checkpoint_collection.find_one(sort=[("created_at", -1)])
+        
+        logger.info(f"Formatting documents for thread ID: {thread_id}")
+        # Format the documents
         docs["agent_sessions"] = format_document(session) if session else {}
-
-        # Retrieve historical_recommendations for the run
-        historical = mdb_historical_recommendations_collection.find_one(query)
         docs["historical_recommendations"] = format_document(historical) if historical else {}
-
-        # Retrieve telemetry_data for the run
-        telemetry = mdb_timeseries_collection.find_one(query)
         docs["telemetry_data"] = format_document(telemetry) if telemetry else {}
-
-        # Retrieve logs for the run
-        log = mdb_logs_collection.find_one(query)
         docs["logs"] = format_document(log) if log else {}
-
-        # Retrieve the default agent profile (not run-specific)
-        profile = mdb_agent_profiles_collection.find_one({"agent_id": "DEFAULT"})
         docs["agent_profiles"] = format_document(profile) if profile else {}
-
-        # Retrieve one sample past_issues document (most recent)
-        past_issue = mdb_embeddings_collection_past.find_one(sort=[("created_at", -1)])
         docs["past_issues"] = format_document(past_issue) if past_issue else {}
-
-        # Retrieve the last checkpoint
-        last_checkpoint = mdb_checkpoint_collection.find_one(sort=[("created_at", -1)])
         docs["checkpoints"] = format_document(last_checkpoint) if last_checkpoint else {}
+        logger.info(f"Documents formatted for thread ID: {thread_id}")
 
         return docs
     except Exception as e:

@@ -21,7 +21,13 @@ logger = logging.getLogger(__name__)
 
 
 class TimeSeriesCollectionCreator(MongoDBConnector):
-    """Class to create a time series collection in MongoDB."""
+    """Class to create a time series collection in MongoDB.
+    
+    Args:
+        uri (str, optional): MongoDB URI. Default parent class value.
+        database_name (str, optional): Database name. Default parent class value.
+        appname (str, optional): Application name. Default parent class value.
+    """
     def __init__(self, uri=None, database_name=None, appname=None):
         super().__init__(uri, database_name, appname)
 
