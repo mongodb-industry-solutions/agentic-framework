@@ -31,8 +31,7 @@ class AgentProfiler(MongoDBConnector):
         self.collection = self.get_collection(self.collection_name)
         # Ensure unique index on agent_id
         self.collection.create_index("agent_id", unique=True)
-        logger.info("AgentProfiler initialized")
-        logger.info(f"Retrieving agent profiles from collection: {self.collection_name}")
+        logger.info(f"AgentProfiler initialized - Retrieving agent profiles from collection: {self.collection_name}")
 
     def get_agent_profile(self, agent_id: str, update_default: bool = False) -> dict:
         """Retrieve the agent profile for the given agent ID.

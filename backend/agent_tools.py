@@ -71,8 +71,6 @@ class AgentTools(MongoDBConnector):
             # Set the collection name
             self.collection_name = collection_name
             self.collection = self.get_collection(self.collection_name)
-                    
-        logger.info("AgentTools initialized")
 
     def get_data_from_csv(self, state: dict) -> dict:
         "Reads data from a CSV file."
@@ -445,18 +443,3 @@ def get_llm_recommendation_tool(state: AgentState) -> AgentState:
     # Instantiate the AgentTools class
     agent_tools = AgentTools(collection_name=mdb_historical_recommendations_collection)
     return agent_tools.get_llm_recommendation(state=state)
-
-# Define the list of tools
-tools = [get_data_from_csv_tool, get_data_from_mdb_tool, vector_search_tool, generate_chain_of_thought_tool, process_data_tool, get_query_embedding_tool, 
-         process_vector_search_tool, persist_data_tool, get_llm_recommendation_tool]
-
-if __name__ == "__main__":
-
-    # Example usage
-    state = {}
-    state["issue_report"] = "My vehicle's fuel consumption has increased significantly over the past week. What might be wrong with the engine or fuel system?"
-    state["thread_id"] = "123"
-
-    # get_query_embedding
-    state = AgentTools.get_query_embedding(state)
-    print(state)
