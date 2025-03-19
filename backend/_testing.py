@@ -1,7 +1,7 @@
 from loader import CSVLoader
 from config.config_loader import ConfigLoader
-from timeseries_coll_creator import TimeSeriesCollectionCreator
-from vector_search_idx_creator import VectorSearchIDXCreator
+from mdb_timeseries_coll_creator import TimeSeriesCollectionCreator
+from mdb_vector_search_idx_creator import VectorSearchIDXCreator
 from embedder import Embedder
 from agent_tools import AgentTools
 
@@ -33,7 +33,8 @@ if __name__ == "__main__":
 
     # Generate chain of thought
     print("Generating chain of thought...")
-    state = AgentTools.generate_chain_of_thought(state)
+    agent_tools = AgentTools()
+    state = agent_tools.generate_chain_of_thought(state=state)
 
     # Create Time Series Collection
     print("Creating Time Series Collection...")

@@ -14,23 +14,22 @@ logger = logging.getLogger(__name__)
 
 # Load configuration
 config = ConfigLoader()
-# Get the MongoDB checkpointer collection name from the config
-MDB_CHECKPOINTER_COLLECTION = config.get("MDB_CHECKPOINTER_COLLECTION")
 
+# --- Agent Checkpointer ---
 class AgentCheckpointer(MongoDBConnector):
-    def __init__(self, collection_name: str = MDB_CHECKPOINTER_COLLECTION, uri=None, database_name: str = None, appname: str = None):
+    def __init__(self, collection_name: str, uri: str=None, database_name: str=None, appname: str=None):
         """
         AgentCheckpointer class to save agent states to MongoDB.
 
         Args:
-            collection_name (str, optional): Collection name. Default is MDB_CHECKPOINTER_COLLECTION.
-            uri (str, optional): MongoDB URI. Default parent class value.
-            database_name (str, optional): Database name. Default parent class value.
-            appname (str, optional): Application name. Default parent class value.
+            collection_name (str): Checkpointer collection name.
+            database_name (str): Database name. Default is None and takes the value from parent class.
+            uri (str): MongoDB connection URI. Default is None and takes the value from parent class.
+            appname (str): Application name. Default is None and takes the value from parent class.
         """
         super().__init__(uri, database_name, appname)
         self.database_name = database_name
-        self.checkpoint_collection_name = str(collection_name)
+        self.checkpoint_collection_name = collection_name
         self.writes_collection_name = collection_name + "_writes"
         logger.info("AgentCheckpointer initialized")
 
@@ -43,8 +42,8 @@ class AgentCheckpointer(MongoDBConnector):
             - MongoDBSaver.from_conn_string()
 
         Params:
-            conn_string (str): MongoDB connection string. Takes the value from parent class.
-            db_name (str): Database name. Takes the value from parent class.
+            conn_string (str): MongoDB connection string. Takes self.uri.
+            db_name (str): Database name. Takes self.database_name.
             checkpoint_collection_name (str): Checkpointer collection name. Default is MDB_CHECKPOINTER_COLLECTION.
             writes_collection_name (str): Writes collection name. Default is MDB_CHECKPOINTER_COLLECTION + "_writes".
 
@@ -57,7 +56,7 @@ class AgentCheckpointer(MongoDBConnector):
             return None
         try:
             logger.info(f"[MongoDB] Initializing MongoDBSaver!")
-            logger.info(f"URI: {mongo_uri}, Database: {self.database_name}, Checkpoint Collection: {self.checkpoint_collection_name}, Writes Collection: {self.writes_collection_name}")
+            logger.info(f"URI: *****, Database: {self.database_name}, Checkpoint Collection: {self.checkpoint_collection_name}, Checkpoint Writes Collection: {self.writes_collection_name}")
             return MongoDBSaver.from_conn_string(
                 conn_string=mongo_uri,
                 db_name=self.database_name,

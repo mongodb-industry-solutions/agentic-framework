@@ -4,7 +4,7 @@
     "INITIAL_QUERY_DESCRIPTION": "Issue report text",
     "CSV_DATA": "data/csv/telemetry_data.csv",
     "CSV_TO_VECTORIZE": "data/csv/issues.csv",
-    "MDB_DATABASE": "agentic_framework",
+    "MDB_DATABASE_NAME": "agentic_framework",
     "MDB_TIMESERIES_COLLECTION": "telemetry_data",
     "MDB_TIMESERIES_TIMEFIELD": "timestamp",
     "MDB_TIMESERIES_GRANULARITY": "minutes",
@@ -24,7 +24,7 @@
         "rules": "Document all steps.",
         "goals": "Provide actionable recommendations."
     },
-    "AGENT_PROFILE_CHOSEN": "MANUFACTORING_AG01",
+    "AGENT_PROFILE_CHOSEN_ID": "MANUFACTORING_AG01",
     "AGENT_MOTIVE": "diagnose vehicle issues",
     "AGENT_DATA_CONSUMED": "telemetry data",
     "LLM_RECOMMENDATION_ROLE": "You are a vehicle maintenance advisor.",

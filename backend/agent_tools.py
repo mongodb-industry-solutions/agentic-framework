@@ -16,7 +16,7 @@ import csv
 from agent_state import AgentState
 from embedder import Embedder
 from profiler import AgentProfiler
-from timeseries_coll_creator import TimeSeriesCollectionCreator
+from mdb_timeseries_coll_creator import TimeSeriesCollectionCreator
 
 from dotenv import load_dotenv
 
@@ -30,53 +30,57 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Load configuration
-config = ConfigLoader()
-
-# Get configuration values
-CSV_DATA = config.get("CSV_DATA")
-MDB_TIMESERIES_COLLECTION = config.get("MDB_TIMESERIES_COLLECTION")
-MDB_TIMESERIES_TIMEFIELD = config.get("MDB_TIMESERIES_TIMEFIELD")
-MDB_TIMESERIES_GRANULARITY = config.get("MDB_TIMESERIES_GRANULARITY")
-CSV_TO_VECTORIZE = config.get("CSV_TO_VECTORIZE")
-MDB_EMBEDDINGS_COLLECTION = config.get("MDB_EMBEDDINGS_COLLECTION")
-MDB_VS_INDEX = config.get("MDB_VS_INDEX")
-AGENT_PROFILE_CHOSEN = config.get("AGENT_PROFILE_CHOSEN")
-EMBEDDINGS_MODEL_NAME = config.get("EMBEDDINGS_MODEL_NAME")
-CHATCOMPLETIONS_MODEL_NAME = config.get("CHATCOMPLETIONS_MODEL_NAME")
-AGENT_MOTIVE = config.get("AGENT_MOTIVE")
-AGENT_DATA_CONSUMED = config.get("AGENT_DATA_CONSUMED")
-LLM_RECOMMENDATION_ROLE = config.get("LLM_RECOMMENDATION_ROLE")
-MDB_HISTORICAL_RECOMMENDATIONS_COLLECTION = config.get("MDB_HISTORICAL_RECOMMENDATIONS_COLLECTION")
-
 class AgentTools(MongoDBConnector):
-    def __init__(self, collection_name: str = None, uri=None, database_name: str = None, appname: str = None):
+    def __init__(self, collection_name: str=None, uri=None, database_name: str=None, appname: str=None):
         """
         AgentTools class to perform various actions for the agent.
 
         Args:
-            collection_name (str, optional): Collection name.
+            collection_name (str): Collection name. Default is None.
             uri (str, optional): MongoDB URI. Default parent class value.
             database_name (str, optional): Database name. Default parent class value.
             appname (str, optional): Application name. Default parent class value.
         """
         super().__init__(uri, database_name, appname)
+
+        # Load configuration
+        config = ConfigLoader()
+        self.config = config
+
+        # Get configuration values
+        self.csv_data = self.config.get("CSV_DATA")
+        self.mdb_timeseries_collection = self.config.get("MDB_TIMESERIES_COLLECTION")
+        self.mdb_timeseries_timefield = self.config.get("MDB_TIMESERIES_TIMEFIELD")
+        self.mdb_timeseries_granularity = self.config.get("MDB_TIMESERIES_GRANULARITY")
+        self.csv_to_vectorize = self.config.get("CSV_TO_VECTORIZE")
+        self.mdb_embeddings_collection = self.config.get("MDB_EMBEDDINGS_COLLECTION")
+        self.mdb_vs_index = self.config.get("MDB_VS_INDEX")
+        self.mdb_agent_profiles_collection = self.config.get("MDB_AGENT_PROFILES_COLLECTION")
+        self.agent_profile_chosen_id = self.config.get("AGENT_PROFILE_CHOSEN_ID")
+        self.embeddings_model_id = self.config.get("EMBEDDINGS_MODEL_ID")
+        self.embeddings_model_name = self.config.get("EMBEDDINGS_MODEL_NAME")
+        self.chatcompletions_model_id = self.config.get("CHATCOMPLETIONS_MODEL_ID")
+        self.chatcompletions_model_name = self.config.get("CHATCOMPLETIONS_MODEL_NAME")
+        self.agent_motive = self.config.get("AGENT_MOTIVE")
+        self.agent_data_consumed = self.config.get("AGENT_DATA_CONSUMED")
+        self.llm_recommendation_role = self.config.get("LLM_RECOMMENDATION_ROLE")
+        self.mdb_historical_recommendations_collection = self.config.get("MDB_HISTORICAL_RECOMMENDATIONS_COLLECTION")
+
         if collection_name:
+            # Set the collection name
             self.collection_name = collection_name
             self.collection = self.get_collection(self.collection_name)
-            logger.info(
-                f"AgentTools initialized for collection: {self.collection_name}")
+                    
         logger.info("AgentTools initialized")
 
-    @staticmethod
-    def get_data_from_csv(state: dict) -> dict:
+    def get_data_from_csv(self, state: dict) -> dict:
         "Reads data from a CSV file."
         message = "[Tool] Retrieved data from CSV file."
         logger.info(message)
 
         # Load CSV data
         # TODO: Probably not the best way to do this
-        csv_loader = CSVLoader(filepath=CSV_DATA, collection_name=MDB_TIMESERIES_COLLECTION)
+        csv_loader = CSVLoader(filepath=self.csv_data, collection_name=self.mdb_timeseries_collection)
         csv_filepath = csv_loader.filepath
 
         data_records = []
@@ -131,7 +135,7 @@ class AgentTools(MongoDBConnector):
                 pipeline = [
                     {
                         "$vectorSearch": {
-                            "index": MDB_VS_INDEX,
+                            "index": self.mdb_vs_index,
                             "path": embedding_key,
                             "queryVector": embedding,
                             "numCandidates": 5,
@@ -167,14 +171,13 @@ class AgentTools(MongoDBConnector):
 
         return {"similar_issues": similar_issues}
 
-    @staticmethod
-    def generate_chain_of_thought(state: AgentState) -> AgentState:
+    def generate_chain_of_thought(self, state: AgentState) -> AgentState:
         """Generates the chain of thought for the agent."""
         logger.info("[LLM Chain-of-Thought Reasoning]")
         # Example usage
-        profiler = AgentProfiler()
+        profiler = AgentProfiler(collection_name=self.mdb_agent_profiles_collection)
         # Get the agent profile
-        p = profiler.get_agent_profile(AGENT_PROFILE_CHOSEN)
+        p = profiler.get_agent_profile(agent_id=self.agent_profile_chosen_id)
         # Get the Issue Report from the state
         issue_report = state["issue_report"]
 
@@ -183,17 +186,17 @@ class AgentTools(MongoDBConnector):
             rules=p["rules"],
             goals=p["goals"],
             issue_report=issue_report,
-            agent_motive=AGENT_MOTIVE,
-            agent_data_consumed=AGENT_DATA_CONSUMED,
-            embedding_model_name=EMBEDDINGS_MODEL_NAME,
-            chat_completion_model_name=CHATCOMPLETIONS_MODEL_NAME
+            agent_motive=self.agent_motive,
+            agent_data_consumed=self.agent_data_consumed,
+            embedding_model_name=self.embeddings_model_name,
+            chat_completion_model_name=self.chatcompletions_model_name
         )
         logger.info("Chain-of-Thought Reasoning Prompt:")
         logger.info(CHAIN_OF_THOUGHTS_PROMPT)
 
         try:
             # Instantiate the chat completion model
-            chat_completions = BedrockAnthropicChatCompletions()
+            chat_completions = BedrockAnthropicChatCompletions(model_id=self.chatcompletions_model_id)
             # Generate a chain of thought based on the prompt
             chain_of_thought = chat_completions.predict(CHAIN_OF_THOUGHTS_PROMPT)
         except Exception as e:
@@ -260,9 +263,9 @@ class AgentTools(MongoDBConnector):
             try:
                 logger.info("Checking Time Series Collection...")
                 ts_coll_result = TimeSeriesCollectionCreator().create_timeseries_collection(
-                    collection_name=MDB_TIMESERIES_COLLECTION,
-                    time_field=MDB_TIMESERIES_TIMEFIELD,
-                    granularity=MDB_TIMESERIES_GRANULARITY
+                    collection_name=self.mdb_timeseries_collection,
+                    time_field=self.mdb_timeseries_timefield,
+                    granularity=self.mdb_timeseries_granularity
                 )
                 logger.info(ts_coll_result)
 
@@ -342,7 +345,7 @@ class AgentTools(MongoDBConnector):
 
         try:
             # Instantiate the chat completion model
-            chat_completions = BedrockAnthropicChatCompletions()
+            chat_completions = BedrockAnthropicChatCompletions(model_id=self.chatcompletions_model_id)
             # Generate a chain of thought based on the prompt
             llm_recommendation = chat_completions.predict(LLM_RECOMMENDATION_PROMPT)
         except Exception as e:
@@ -372,86 +375,73 @@ class AgentTools(MongoDBConnector):
 
         return {**state, "recommendation_text": llm_recommendation, "next_step": "end"}
 
-    # --- Conditional Routing ---
-    @staticmethod
-    def route_by_telemetry_severity(state: AgentState) -> str:
-        """Routes based on telemetry data severity.
-        If engine temperature is greater than 110, route to recommendation_node.
-        Otherwise, route to embedding_node
-        """
-        for record in state["telemetry_data"]:
-            if float(record["engine_temperature"]) > 110:
-                state.setdefault("updates", []).append("Critical engine temperature detected; bypassing normal flow.")
-                logger.warning("\n[Alert] Critical engine temperature detected, bypassing normal flow...")
-                return "recommendation_node"
-        return "embedding_node"
-
 
 
 # Define tools
-@tool
 def get_data_from_csv_tool(state: dict) -> dict:
     "Reads data from a CSV file."
-    return AgentTools.get_data_from_csv(state)
+    agent_tools = AgentTools()
+    return agent_tools.get_data_from_csv(state=state)
 
-
-@tool
 def get_data_from_mdb_tool(state: dict) -> dict:
     "Reads data from a MongoDB collection."
-    mdb_data = AgentTools(collection_name=MDB_TIMESERIES_COLLECTION)
-    return mdb_data.get_data_from_mdb(state)
+    # Load configuration
+    config = ConfigLoader()
+    # Get the MongoDB collection name
+    mdb_timeseries_collection = config.get("MDB_TIMESERIES_COLLECTION")
+    # Instantiate the AgentTools class
+    agent_tools = AgentTools(collection_name=mdb_timeseries_collection)
+    return agent_tools.get_data_from_mdb(state)
 
-
-@tool
 def vector_search_tool(state: dict) -> dict:
     """Performs a vector search in a MongoDB collection."""
-    mdb_vector = AgentTools(collection_name=MDB_EMBEDDINGS_COLLECTION)
-    return mdb_vector.vector_search(state)
+    # Load configuration
+    config = ConfigLoader()
+    # Get the MongoDB collection name
+    mdb_embeddings_collection = config.get("MDB_EMBEDDINGS_COLLECTION")
+    # Instantiate the AgentTools class
+    agent_tools = AgentTools(collection_name=mdb_embeddings_collection)
+    return agent_tools.vector_search(state=state)
 
-
-@tool
 def generate_chain_of_thought_tool(state: AgentState) -> AgentState:
     """Generates the chain of thought for the agent."""
-    return AgentTools.generate_chain_of_thought(state)
+    agent_tools = AgentTools()
+    return agent_tools.generate_chain_of_thought(state=state)
 
-
-@tool
 def process_data_tool(state: AgentState) -> AgentState:
     """Processes the data."""
-    return AgentTools.process_data(state)
+    agent_tools = AgentTools()
+    return agent_tools.process_data(state=state)
 
-
-@tool
 def get_query_embedding_tool(state: AgentState) -> AgentState:
     """Generates the query embedding."""
-    return AgentTools.get_query_embedding(state)
+    agent_tools = AgentTools()
+    return agent_tools.get_query_embedding(state=state)
 
-
-@tool
 def process_vector_search_tool(state: AgentState) -> AgentState:
     """Processes the vector search results."""
-    return AgentTools.process_vector_search(state)
+    agent_tools = AgentTools()
+    return agent_tools.process_vector_search(state=state)
 
-
-@tool
 def persist_data_tool(state: AgentState) -> AgentState:
     """Persists the data into MongoDB."""
-    mdb_persist = AgentTools(collection_name=MDB_TIMESERIES_COLLECTION)
-    return mdb_persist.persist_data(state)
+    # Load configuration
+    config = ConfigLoader()
+    # Get the MongoDB collection name
+    mdb_timeseries_collection = config.get("MDB_TIMESERIES_COLLECTION")
+    # Instantiate the AgentTools class
+    agent_tools = AgentTools(collection_name=mdb_timeseries_collection)
+    return agent_tools.persist_data(state=state)
 
-
-@tool
 def get_llm_recommendation_tool(state: AgentState) -> AgentState:
     """Generates the LLM recommendation."""
-    mdb_recommendation = AgentTools(collection_name=MDB_HISTORICAL_RECOMMENDATIONS_COLLECTION)
-    return mdb_recommendation.get_llm_recommendation(state)
-
-
-@tool
-def route_by_telemetry_severity_tool(state: AgentState) -> AgentState:
-    """Routes based on telemetry data severity."""
-    return AgentTools.route_by_telemetry_severity(state)
-
+    # Load configuration
+    config = ConfigLoader()
+    # Get the MongoDB collection name
+    mdb_historical_recommendations_collection = config.get("MDB_HISTORICAL_RECOMMENDATIONS_COLLECTION")
+    # Instantiate the AgentTools class
+    agent_tools = AgentTools(collection_name=mdb_historical_recommendations_collection)
+    return agent_tools.get_llm_recommendation(state=state)
 
 # Define the list of tools
 tools = [get_data_from_csv_tool, get_data_from_mdb_tool, vector_search_tool, generate_chain_of_thought_tool, process_data_tool, get_query_embedding_tool, 

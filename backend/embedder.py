@@ -19,14 +19,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Load configuration
-config = ConfigLoader()
-# Get the MongoDB vectors collection name from the config
-MDB_EMBEDDINGS_COLLECTION = config.get("MDB_EMBEDDINGS_COLLECTION")
-
-
 class Embedder(MongoDBConnector):
-    def __init__(self, collection_name: str = MDB_EMBEDDINGS_COLLECTION, uri=None, database_name: str = None, appname: str = None):
+    def __init__(self, collection_name: str=None, uri=None, database_name: str = None, appname: str = None):
         """
         Embedder class to generate embeddings for text data stored in MongoDB.
 
@@ -37,7 +31,12 @@ class Embedder(MongoDBConnector):
             appname (str, optional): Application name. Default parent class value.
         """
         super().__init__(uri, database_name, appname)
-        self.collection_name = collection_name
+
+        # Load configuration
+        config = ConfigLoader()
+        # Get the MongoDB vectors collection name from the config
+        MDB_EMBEDDINGS_COLLECTION = config.get("MDB_EMBEDDINGS_COLLECTION")
+        self.collection_name = collection_name or MDB_EMBEDDINGS_COLLECTION
         self.collection = self.get_collection(self.collection_name)
         logger.info("Embedder initialized")
 
@@ -56,6 +55,8 @@ class Embedder(MongoDBConnector):
             logging.error("Invalid input. Please provide a valid text input.")
             return None
 
+        # Load configuration
+        config = ConfigLoader()
         # Load Cohere English model ID from config
         model_id = config.get("EMBEDDINGS_MODEL_ID")
 

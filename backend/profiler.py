@@ -11,24 +11,23 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Load configuration
-config = ConfigLoader()
-# Get the MongoDB agent profiles collection name from the config
-MDB_AGENT_PROFILES_COLLECTION = config.get("MDB_AGENT_PROFILES_COLLECTION")
-
 class AgentProfiler(MongoDBConnector):
-    def __init__(self, collection_name: str = MDB_AGENT_PROFILES_COLLECTION, uri=None, database_name: str = None, appname: str = None):
+    def __init__(self, collection_name: str=None, uri: str = None, database_name: str = None, appname: str = None):
         """
         AgentProfiler class to retrieve agent profiles from MongoDB.
 
         Args:
-            collection_name (str, optional): Collection name.
+            collection_name (str, optional): Collection name. Default is None and will be retrieved from the config: MDB_AGENT_PROFILES_COLLECTION.
             uri (str, optional): MongoDB URI. Default parent class value.
             database_name (str, optional): Database name. Default parent class value.
             appname (str, optional): Application name. Default parent class value.
         """
         super().__init__(uri, database_name, appname)
-        self.collection_name = collection_name
+        # Load configuration
+        config = ConfigLoader()
+        # Get the MongoDB agent profiles collection name from the config
+        MDB_AGENT_PROFILES_COLLECTION = config.get("MDB_AGENT_PROFILES_COLLECTION")
+        self.collection_name = collection_name or MDB_AGENT_PROFILES_COLLECTION
         self.collection = self.get_collection(self.collection_name)
         # Ensure unique index on agent_id
         self.collection.create_index("agent_id", unique=True)
@@ -46,6 +45,8 @@ class AgentProfiler(MongoDBConnector):
         Returns:
             dict: Agent profile for the given agent ID.
         """
+        # Load configuration
+        config = ConfigLoader()
         # Load Default Agent Profile from config
         default_profile = config.get("DEFAULT_AGENT_PROFILE")
 

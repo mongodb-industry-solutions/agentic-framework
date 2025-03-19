@@ -75,7 +75,7 @@ class BedrockAnthropicChatCompletions(BedrockClient):
 
         except (ClientError, Exception) as e:
             self.log.error(
-                f"ERROR: Can't invoke '{self.text_model}'. Reason: {e}")
+                f"ERROR: Can't invoke '{self.model_id}'. Reason: {e}")
             exit(1)
 
         # Decode the response body.

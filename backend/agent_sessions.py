@@ -13,14 +13,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
-# Load configuration
-config = ConfigLoader()
-# Get the MongoDB checkpointer collection name from the config
-MDB_AGENT_SESSIONS_COLLECTION = config.get("MDB_AGENT_SESSIONS_COLLECTION")
-
 class AgentSessions(MongoDBConnector):
-    def __init__(self, collection_name: str = MDB_AGENT_SESSIONS_COLLECTION, uri=None, database_name: str = None, appname: str = None):
+    def __init__(self, collection_name: str=None, uri=None, database_name: str = None, appname: str = None):
         """
         AgentCheckpointer class to save agent states to MongoDB.
 
@@ -31,7 +25,12 @@ class AgentSessions(MongoDBConnector):
             appname (str, optional): Application name. Default parent class value.
         """
         super().__init__(uri, database_name, appname)
-        self.collection_name = collection_name
+
+        # Load configuration
+        config = ConfigLoader()
+        # Get the MongoDB checkpointer collection name from the config
+        MDB_AGENT_SESSIONS_COLLECTION = config.get("MDB_AGENT_SESSIONS_COLLECTION")
+        self.collection_name = collection_name or MDB_AGENT_SESSIONS_COLLECTION
         self.sessions_collection = self.get_collection(collection_name)
         logger.info("AgentSessions initialized")
 
