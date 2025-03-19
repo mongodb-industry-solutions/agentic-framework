@@ -54,6 +54,7 @@ class AgentTools(MongoDBConnector):
         self.mdb_timeseries_granularity = self.config.get("MDB_TIMESERIES_GRANULARITY")
         self.csv_to_vectorize = self.config.get("CSV_TO_VECTORIZE")
         self.mdb_embeddings_collection = self.config.get("MDB_EMBEDDINGS_COLLECTION")
+        self.mdb_embeddings_collection_vs_field = self.config.get("MDB_EMBEDDINGS_COLLECTION_VS_FIELD")
         self.mdb_vs_index = self.config.get("MDB_VS_INDEX")
         self.mdb_agent_profiles_collection = self.config.get("MDB_AGENT_PROFILES_COLLECTION")
         self.agent_profile_chosen_id = self.config.get("AGENT_PROFILE_CHOSEN_ID")
@@ -115,7 +116,7 @@ class AgentTools(MongoDBConnector):
         if state.get("embedding_key"):
             embedding_key = state["embedding_key"]
         elif self.collection_name:
-            embedding_key = self.collection_name + "_embedding"
+            embedding_key = self.mdb_embeddings_collection_vs_field
         else:
             # Default embedding key
             embedding_key = "embedding"
@@ -214,13 +215,14 @@ class AgentTools(MongoDBConnector):
         state.setdefault("updates", []).append("Chain-of-thought generated.")
         return {**state, "chain_of_thought": chain_of_thought, "next_step": "get_data_from_csv_tool"}
     
+    @staticmethod
     def process_data(state: AgentState) -> AgentState:
         """Processes the data."""
         state.setdefault("updates", []).append("Data processed.")
         state["next_step"] = "embedding_node"
         return state
 
-    def get_query_embedding(state: AgentState) -> AgentState:
+    def get_query_embedding(self, state: AgentState) -> AgentState:
         """Generates the query embedding."""
         logger.info("[Action] Generating Query Embedding...")
         state.setdefault("updates", []).append("Generating query embedding...")
@@ -230,7 +232,7 @@ class AgentTools(MongoDBConnector):
 
         try: 
             # Instantiate the Embedder
-            embedder = Embedder()
+            embedder = Embedder(collection_name=self.mdb_embeddings_collection)
             embedding = embedder.get_embedding(text)
             state.setdefault("updates", []).append("Query embedding generated!")
             logger.info("Query embedding generated!")
@@ -240,6 +242,7 @@ class AgentTools(MongoDBConnector):
             embedding = [0.0] * 1024
         return {**state, "embedding_vector": embedding, "next_step": "vector_search_tool"}
     
+    @staticmethod
     def process_vector_search(state: AgentState) -> AgentState:
         """Processes the vector search results."""
         state.setdefault("updates", []).append("Vector search results processed.")
