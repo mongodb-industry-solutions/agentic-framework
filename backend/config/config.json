@@ -11,6 +11,10 @@
     "MDB_EMBEDDINGS_COLLECTION": "issues",
     "MDB_EMBEDDINGS_COLLECTION_VS_FIELD": "issue_embedding",
     "MDB_VS_INDEX": "agentic_framework_issues_vs_idx",
+    "SIMILAR_ISSUES_RECORDS": [
+        {"issue": "Engine knocking when turning", "recommendation": "Inspect spark plugs and engine oil."},
+        {"issue": "Suspension noise under load", "recommendation": "Check suspension components for wear."}
+    ],
     "MDB_CHAT_HISTORY_COLLECTION": "chat_history",
     "MDB_CHECKPOINTER_COLLECTION": "checkpoints",
     "MDB_HISTORICAL_RECOMMENDATIONS_COLLECTION": "historical_recommendations",

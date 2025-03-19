@@ -1,13 +1,14 @@
 from typing import Any, List, Literal, Optional
 from typing_extensions import TypedDict
+from datetime import datetime
 
 # --- Define State Types ---
 
 class TelemetryRecord(TypedDict):
-    timestamp: str
-    engine_temperature: str
-    oil_pressure: str
-    avg_fuel_consumption: str
+    timestamp: datetime
+    engine_temperature: float
+    oil_pressure: float
+    avg_fuel_consumption: float
 
 class SimilarIssue(TypedDict):
     issue: str
