@@ -15,8 +15,9 @@ import csv
 
 from agent_state import AgentState
 from embedder import Embedder
-from profiler import AgentProfiler
+from agent_profiles import AgentProfiles
 from mdb_timeseries_coll_creator import TimeSeriesCollectionCreator
+from mdb_vector_search_idx_creator import VectorSearchIDXCreator
 
 from dotenv import load_dotenv
 
@@ -52,20 +53,19 @@ class AgentTools(MongoDBConnector):
         self.mdb_timeseries_collection = self.config.get("MDB_TIMESERIES_COLLECTION")
         self.mdb_timeseries_timefield = self.config.get("MDB_TIMESERIES_TIMEFIELD")
         self.mdb_timeseries_granularity = self.config.get("MDB_TIMESERIES_GRANULARITY")
+        self.default_timeseries_data = self.config.get("DEFAULT_TIMESERIES_DATA")
+        self.critical_conditions_config = self.config.get("CRITICAL_CONDITIONS")
         self.csv_to_vectorize = self.config.get("CSV_TO_VECTORIZE")
         self.mdb_embeddings_collection = self.config.get("MDB_EMBEDDINGS_COLLECTION")
         self.mdb_embeddings_collection_vs_field = self.config.get("MDB_EMBEDDINGS_COLLECTION_VS_FIELD")
         self.mdb_vs_index = self.config.get("MDB_VS_INDEX")
-        self.similar_issues_records = self.config.get("SIMILAR_ISSUES_RECORDS")
+        self.default_similar_queries = self.config.get("DEFAULT_SIMILAR_QUERIES")
         self.mdb_agent_profiles_collection = self.config.get("MDB_AGENT_PROFILES_COLLECTION")
         self.agent_profile_chosen_id = self.config.get("AGENT_PROFILE_CHOSEN_ID")
         self.embeddings_model_id = self.config.get("EMBEDDINGS_MODEL_ID")
         self.embeddings_model_name = self.config.get("EMBEDDINGS_MODEL_NAME")
         self.chatcompletions_model_id = self.config.get("CHATCOMPLETIONS_MODEL_ID")
         self.chatcompletions_model_name = self.config.get("CHATCOMPLETIONS_MODEL_NAME")
-        self.agent_motive = self.config.get("AGENT_MOTIVE")
-        self.agent_data_consumed = self.config.get("AGENT_DATA_CONSUMED")
-        self.llm_recommendation_role = self.config.get("LLM_RECOMMENDATION_ROLE")
         self.mdb_historical_recommendations_collection = self.config.get("MDB_HISTORICAL_RECOMMENDATIONS_COLLECTION")
 
         if collection_name:
@@ -74,35 +74,66 @@ class AgentTools(MongoDBConnector):
             self.collection = self.get_collection(self.collection_name)
 
     def get_data_from_csv(self, state: dict) -> dict:
-        "Reads data from a CSV file."
+        """
+        Reads data from a CSV file and dynamically infers field names.
+        """
         message = "[Tool] Retrieved data from CSV file."
         logger.info(message)
 
         # Load CSV data
-        # TODO: Probably not the best way to do this
         csv_loader = CSVLoader(filepath=self.csv_data, collection_name=self.mdb_timeseries_collection)
         csv_filepath = csv_loader.filepath
 
         data_records = []
         with open(csv_filepath, "r") as file:
-            reader = csv.DictReader(file)
+            reader = csv.DictReader(file)  # Automatically infers field names from the header row
             for row in reader:
                 data_records.append(row)
 
         state.setdefault("updates", []).append(message)
-        return {"telemetry_data": data_records, "thread_id": state.get("thread_id", "")}
+        return {"timeseries_data": data_records, "thread_id": state.get("thread_id", "")}
 
     def get_data_from_mdb(self, state: dict) -> dict:
-        "Reads data from a MongoDB collection."
+        """
+        Reads data from a MongoDB collection and dynamically infers field names.
+        """
         message = "[Tool] Retrieved data from MongoDB collection."
         logger.info(message)
 
         data_records = []
         for record in self.collection.find():
+            # Convert MongoDB ObjectIds to strings
+            record = convert_objectids(record)
             data_records.append(record)
 
         state.setdefault("updates", []).append(message)
-        return {"telemetry_data": data_records, "thread_id": state.get("thread_id", "")}
+        return {"timeseries_data": data_records, "thread_id": state.get("thread_id", "")}
+    
+    def evaluate_critical_conditions(self, timeseries_data) -> list:
+        """
+        Evaluate critical conditions dynamically based on configuration.
+
+        Args:
+            timeseries_data (list): A list of time-series records.
+
+        Returns:
+            list: A list of critical condition messages.
+        """
+        critical_conditions = []
+        for record in timeseries_data:
+            for key, condition in self.critical_conditions_config.items():
+                try:
+                    value = float(record.get(key, 0))
+                    threshold = condition["threshold"]
+                    condition_operator = condition["condition"]
+                    if (
+                        (condition_operator == ">" and value > threshold) or
+                        (condition_operator == "<" and value < threshold)
+                    ):
+                        critical_conditions.append(condition["message"].format(value=value))
+                except (ValueError, KeyError) as e:
+                    logger.error(f"[Warning] Error parsing values for {key}: {e}")
+        return critical_conditions
 
     def vector_search(self, state: dict) -> dict:
         """Performs a vector search in a MongoDB collection."""
@@ -119,11 +150,20 @@ class AgentTools(MongoDBConnector):
         else:
             # Default embedding key
             embedding_key = "embedding"
+
+        logger.info(f"Embedding key: {embedding_key}")
         # Get the embedding vector from the state
         embedding = state.get("embedding_vector", [])
-        # Similar data records
-        logger.info(f"Setting similar issues from config file...")
-        similar_issues = self.similar_issues_records
+
+        try:
+            logger.info("Checking Vector Search Index...")
+            # Instantiate the VectorSearchIDXCreator class
+            vector_index_creator = VectorSearchIDXCreator()
+            vector_index_creator_result = vector_index_creator.create_index()
+            logger.info(vector_index_creator_result)
+        except Exception as e:
+            logger.error(f"[MongoDB] Error checking vector search index: {e}")
+            state.setdefault("updates", []).append("[MongoDB] Error checking vector search.")
 
         try:
             # Perform vector search
@@ -139,50 +179,56 @@ class AgentTools(MongoDBConnector):
                         }
                     }
                 ]
-            # Execute the aggregation pipeline
-            results = list(self.collection.aggregate(pipeline))
-            # Format the results
-            for result in results:
-                if "_id" in result:
-                    # result["_id"] = str(result["_id"])
-                    # It's not necessary to process the _id field, so removing it!
-                    del result["_id"]
-                if self.mdb_embeddings_collection_vs_field in result:
-                    # Removing the embedding field from the results
-                    del result[self.mdb_embeddings_collection_vs_field]
+                # Execute the aggregation pipeline
+                results = list(self.collection.aggregate(pipeline))
+                # Format the results
+                for result in results:
+                    if "_id" in result:
+                        # result["_id"] = str(result["_id"])
+                        # It's not necessary to process the _id field, so removing it!
+                        del result["_id"]
+                    if self.mdb_embeddings_collection_vs_field in result:
+                        # Removing the embedding field from the results
+                        del result[self.mdb_embeddings_collection_vs_field]
+            else:
+                logger.info("[MongoDB] No collection set for vector search.")
+                logger.info("Setting default similar queries.")
+                similar_queries = self.default_similar_queries
+                state.setdefault("updates", []).append("[MongoDB] No collection set for vector search. Using default similar queries.")
             if results:
                 logger.info(f"[MongoDB] Retrieved similar data from vector search.")
                 state.setdefault("updates", []).append("[MongoDB] Retrieved similar data.")
-                similar_issues = results
-                logger.info(f"Similar issues - Vector Search results: {similar_issues}")
+                similar_queries = results
+                logger.info(f"Similar queries - Vector Search results: {similar_queries}")
             else:
                 logger.info(f"[MongoDB] No similar data found. Returning default message.")
                 state.setdefault("updates", []).append("[MongoDB] No similar data found.")
-                similar_issues = [{"issue": "No similar issues found", "recommendation": "No immediate action based on past data."}]
+                similar_queries = [{"query": "No similar queries found", "recommendation": "No immediate action based on past data."}]
         except Exception as e:
             logger.error(f"Error during MongoDB Vector Search operation: {e}")
             state.setdefault("updates", []).append("[MongoDB] Error during Vector Search operation.")
-            similar_issues = [{"issue": "MongoDB Vector Search operation error", "recommendation": "Please try again later."}]
+            similar_queries = [{"query": "MongoDB Vector Search operation error", "recommendation": "Please try again later."}]
 
-        return {"similar_issues_list": similar_issues}
+        return {"historical_recommendations_list": similar_queries}
 
     def generate_chain_of_thought(self, state: AgentState) -> AgentState:
         """Generates the chain of thought for the agent."""
         logger.info("[LLM Chain-of-Thought Reasoning]")
-        # Example usage
-        profiler = AgentProfiler(collection_name=self.mdb_agent_profiles_collection)
+        # Instantiate the AgentProfiles class
+        profiler = AgentProfiles(collection_name=self.mdb_agent_profiles_collection)
         # Get the agent profile
         p = profiler.get_agent_profile(agent_id=self.agent_profile_chosen_id)
-        # Get the Issue Report from the state
-        issue_report = state["issue_report"]
+        # Get the Query Reported from the state
+        query_reported = state["query_reported"]
 
         CHAIN_OF_THOUGHTS_PROMPT = get_chain_of_thoughts_prompt(
-            profile=p["profile"],
-            rules=p["rules"],
-            goals=p["goals"],
-            issue_report=issue_report,
-            agent_motive=self.agent_motive,
-            agent_data_consumed=self.agent_data_consumed,
+            agent_profile=p["profile"],
+            agent_rules=p["rules"],
+            agent_instructions=p["instructions"],
+            agent_goals=p["goals"],
+            query_reported=query_reported,
+            agent_motive=p["goals"],
+            agent_kind_of_data=p["kind_of_data"],
             embedding_model_name=self.embeddings_model_name,
             chat_completion_model_name=self.chatcompletions_model_name
         )
@@ -198,8 +244,8 @@ class AgentTools(MongoDBConnector):
             logger.error(f"Error generating chain of thought: {e}")
             chain_of_thought = (
                 "1. Consume data.\n"
-                "2. Generate an embedding for the complaint.\n"
-                "3. Perform a vector search on past issues.\n"
+                "2. Generate an embedding for the query.\n"
+                "3. Perform a vector search on past recommendations.\n"
                 "4. Persist data into MongoDB.\n"
                 "5. Generate a final summary and recommendation."
             )
@@ -222,7 +268,7 @@ class AgentTools(MongoDBConnector):
         state.setdefault("updates", []).append("Generating query embedding...")
 
         # Get the query text
-        text = state["issue_report"]
+        text = state["query_reported"]
 
         try: 
             # Instantiate the Embedder
@@ -244,102 +290,102 @@ class AgentTools(MongoDBConnector):
         return state
     
     def persist_data(self, state: AgentState) -> AgentState:
-        """Persists the data into MongoDB."""
+        """
+        Persists the data into MongoDB.
+        """
         state.setdefault("updates", []).append("Persisting data to MongoDB...")
         logger.info("[Action] Persisting data to MongoDB...")
 
-        # Check if a collection is set
-        if self.collection is not None:
-            # Combined data to persist
-            combined_data = {
-                    "issue_report": state["issue_report"],
-                    "telemetry": state["telemetry_data"],
-                    "similar_issues": state["similar_issues_list"],
-                    "thread_id": state.get("thread_id", "")
-                }
-            try:
-                logger.info("Checking Time Series Collection...")
-                ts_coll_result = TimeSeriesCollectionCreator().create_timeseries_collection(
+        try:
+            # Instantiate the TimeSeriesCollectionCreator class
+            logger.info("Checking Time Series Collection...")
+            ts_coll_result = TimeSeriesCollectionCreator().create_timeseries_collection(
                     collection_name=self.mdb_timeseries_collection,
                     time_field=self.mdb_timeseries_timefield,
                     granularity=self.mdb_timeseries_granularity
-                )
-                logger.info(ts_coll_result)
+            )
+            logger.info(ts_coll_result)
+            # Get the MongoDB collection
+            timeseries_collection_name = self.mdb_timeseries_collection
+            timeseries_collection = self.get_collection(self.mdb_timeseries_collection)
+        except Exception as e:
+            logger.error(f"Error creating time series collection: {e}")
+            state.setdefault("updates", []).append("Error creating time series collection.")
 
-                # Looping through data to persist
-                for record in combined_data["telemetry"]:
+        if timeseries_collection is not None:
+            combined_data = {
+                "query_reported": state["query_reported"],
+                "timeseries": state["timeseries_data"],
+                "similar_queries": state["historical_recommendations_list"],
+                "thread_id": state.get("thread_id", "")
+            }
+            try:
+                # Persist each record in the time-series data
+                for record in combined_data["timeseries"]:
                     try:
+                        # Parse timestamp and convert values dynamically
                         record["timestamp"] = datetime.datetime.strptime(record["timestamp"], "%Y-%m-%dT%H:%M:%SZ")
-                        # Convert values to float
-                        record["engine_temperature"] = float(record["engine_temperature"])
-                        record["oil_pressure"] = float(record["oil_pressure"])
-                        record["avg_fuel_consumption"] = float(record["avg_fuel_consumption"])
+                        for key in record:
+                            if key != "timestamp" and key != "thread_id":
+                                record[key] = float(record[key])
                     except Exception as e:
-                        logger.error("Error parsing timestamp:", e)
+                        logger.error(f"Error processing record: {e}")
                     record["thread_id"] = state.get("thread_id", "")
-                    # Convert ObjectIds to strings
                     record = convert_objectids(record)
-                    # Insert the record
-                    self.collection.insert_one(record)
-                logger.info(f"[MongoDB] Data persisted in {self.collection_name} collection.")
+                    # TODO: REMOVE THIS LOGGER STATEMENT
+                    logger.info(f"Persisting record: {record}")
+                    timeseries_collection.insert_one(record)
 
-                logger.info("Getting logs collection...")
+                logger.info(f"[MongoDB] Data persisted in {timeseries_collection_name} collection.")
+
+                # Persist logs
                 coll_logs = self.db["logs"]
-                logger.info("Generating log entry...")
                 log_entry = {
                     "thread_id": state.get("thread_id", ""),
-                    "issue_report": combined_data["issue_report"],
-                    "similar_issues": combined_data["similar_issues"],
+                    "query_reported": combined_data["query_reported"],
+                    "similar_queries": combined_data["similar_queries"],
                     "created_at": datetime.datetime.now(datetime.timezone.utc)
                 }
-                # Convert ObjectIds to strings
                 log_entry = convert_objectids(log_entry)
-                # Insert the record
                 coll_logs.insert_one(log_entry)
                 state.setdefault("updates", []).append("Data persisted to MongoDB.")
             except Exception as e:
-                logger.error("Error persisting data to MongoDB:", e)
+                logger.error(f"Error persisting data to MongoDB: {e}")
                 state.setdefault("updates", []).append("Error persisting data to MongoDB.")
         else:
             state.setdefault("updates", []).append("No MongoDB collection set for persistence.")
             logger.info("No MongoDB collection set for persistence.")
-            return {**state, "next_step": "recommendation_node"}
+
+        return {**state, "next_step": "recommendation_node"}
         
     def get_llm_recommendation(self, state: AgentState) -> AgentState:
+        """Generates the LLM recommendation."""
         state.setdefault("updates", []).append("Generating final recommendation...")
         logger.info("[Final Answer] Generating final recommendation...")
         
-        telemetry_data = state["telemetry_data"]
-        similar_issues = state["similar_issues_list"]
-        
-        if not telemetry_data:
-            state.setdefault("updates", []).append("No telemetry data; using default values.")
-            logger.warning("[Warning] No telemetry data available. Using default values.")
-            telemetry_data = [{
-                "timestamp": "2025-02-19T13:15:00Z",
-                "engine_temperature": "99",
-                "oil_pressure": "33",
-                "avg_fuel_consumption": "8.8"
-            }]
-        critical_conditions = []
-        
-        for record in telemetry_data:
-            try:
-                engine_temp = float(record["engine_temperature"])
-                oil_pressure = float(record["oil_pressure"])
-                if engine_temp > 100:
-                    critical_conditions.append(f"Critical engine temperature: {engine_temp}°C")
-                if oil_pressure < 30:
-                    critical_conditions.append(f"Low oil pressure: {oil_pressure} PSI")
-            except (ValueError, KeyError) as e:
-                logger.error(f"[Warning] Error parsing telemetry values: {e}")
+        # Use default timeseries data if none is provided
+        timeseries_data = state.get("timeseries_data", [])
+        if not timeseries_data:
+            state.setdefault("updates", []).append("No timeseries data; using default values.")
+            logger.warning("[Warning] No timeseries data available. Using default values.")
+            timeseries_data = self.default_timeseries_data
+
+        # Evaluate critical conditions
+        critical_conditions = self.evaluate_critical_conditions(timeseries_data)
         critical_info = "CRITICAL ALERT: " + ", ".join(critical_conditions) + "\n\n" if critical_conditions else ""
+
+        # Instantiate the AgentProfiles class
+        profiler = AgentProfiles(collection_name=self.mdb_agent_profiles_collection)
+        # Get the agent profile
+        p = profiler.get_agent_profile(agent_id=self.agent_profile_chosen_id)
 
         # Generate the LLM recommendation prompt
         LLM_RECOMMENDATION_PROMPT = get_llm_recommendation_prompt(
+            agent_role=p["role"],
+            agent_kind_of_data=p["kind_of_data"],
             critical_info=critical_info,
-            telemetry_data=telemetry_data,
-            similar_issues=similar_issues
+            timeseries_data=timeseries_data,
+            historical_recommendations_list=state.get("historical_recommendations_list", [])
         )
         logger.info("LLM Recommendation Prompt:")
         logger.info(LLM_RECOMMENDATION_PROMPT)
@@ -361,9 +407,9 @@ class AgentTools(MongoDBConnector):
             recommendation_record = {
                 "thread_id": state.get("thread_id", ""),
                 "timestamp": datetime.datetime.now(datetime.timezone.utc),
-                "issue_report": state["issue_report"],
-                "telemetry_data": state["telemetry_data"],
-                "similar_issues": state["similar_issues_list"],
+                "query_reported": state["query_reported"],
+                "timeseries_data": timeseries_data,
+                "historical_recommendations": state.get("historical_recommendations_list", []),
                 "recommendation": llm_recommendation
             }
             recommendation_record = convert_objectids(recommendation_record)
@@ -426,12 +472,8 @@ def process_vector_search_tool(state: AgentState) -> AgentState:
 
 def persist_data_tool(state: AgentState) -> AgentState:
     """Persists the data into MongoDB."""
-    # Load configuration
-    config = ConfigLoader()
-    # Get the MongoDB collection name
-    mdb_timeseries_collection = config.get("MDB_TIMESERIES_COLLECTION")
     # Instantiate the AgentTools class
-    agent_tools = AgentTools(collection_name=mdb_timeseries_collection)
+    agent_tools = AgentTools()
     return agent_tools.persist_data(state=state)
 
 def get_llm_recommendation_tool(state: AgentState) -> AgentState:

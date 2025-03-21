@@ -1,64 +1,67 @@
-# --- Define Prompt Generation Functions ---
+# --- Prompt Generation Functions ---
 
-def get_chain_of_thoughts_prompt(profile: str, rules: str, goals: str, issue_report: str, agent_motive: str,
-                                 agent_data_consumed: str, embedding_model_name: str, chat_completion_model_name: str) -> str:
+def get_chain_of_thoughts_prompt(agent_profile: str, agent_rules: str, agent_instructions: str, agent_goals: str, query_reported: str, agent_motive: str,
+                                 agent_kind_of_data: str, embedding_model_name: str, chat_completion_model_name: str) -> str:
     """
     Generate a prompt for the chain of thoughts reasoning.
 
     Args:
-        profile (str): Instructions for the agent profile.
-        rules (str): Rules for the agent profile.
-        goals (str): Goals for the agent profile.
-        issue_report (str): Issue report to be used by the agent.
-        agent_motive (str): Motive for the agent.
-        agent_data_consumed (str): Data consumed by the agent.
-        embedding_model_name (str): Name of the embedding model.
-        chat_completion_model_name (str): Name of the chat completion model.
+        agent_profile (str): Profile of the agent generating the chain of thoughts.
+        agent_rules (str): Rules the agent follows in generating the chain of thoughts.
+        agent_instructions (str): Instructions for the agent generating the chain of thoughts.
+        agent_goals (str): Goals of the agent generating the chain of thoughts.
+        query_reported (str): Query reported to the agent.
+        agent_motive (str): Motive of the agent generating the chain of thoughts.
+        agent_kind_of_data (str): Kind of data the agent consumes.
+        embedding_model_name (str): Name of the embedding model used by the agent.
+        chat_completion_model_name (str): Name of the chat completion model used by the agent
 
     Returns:
         str: The prompt for the chain of thoughts reasoning
     """
 
     return f"""
-        Agent Profile:
-        Instructions: {profile}
-        Rules: {rules}
-        Goals: {goals}
+        Agent Profile: {agent_profile}
+        Instructions: {agent_instructions}
+        Rules: {agent_rules}
+        Goals: {agent_goals}
 
 
-        You are an AI agent designed to {agent_motive}. Given the issue report:
-        {issue_report}
+        You are an AI agent designed to {agent_motive}. Given the query:
+        {query_reported}
         
         Generate a detailed chain-of-thought reasoning that outlines the following steps:
-        1. Consume {agent_data_consumed}.
+        1. Consume {agent_kind_of_data}.
         2. Generate an embedding for the complaint using {embedding_model_name}
-        3. Perform a vector search on past issues in MongoDB Atlas.
-        4. Persist {agent_data_consumed} into MongoDB.
+        3. Perform a vector search on past queries in MongoDB Atlas.
+        4. Persist {agent_kind_of_data} into MongoDB.
         5. Use {chat_completion_model_name}'s ChatCompletion model to generate a final summary and recommendation.
         
         Please provide your chain-of-thought as a numbered list with explanations for each step.
         """
 
 
-def get_llm_recommendation_prompt(critical_info: str, telemetry_data: str, similar_issues: str) -> str:
+def get_llm_recommendation_prompt(agent_role: str, agent_kind_of_data: str, critical_info: str, timeseries_data: str, historical_recommendations_list: str) -> str:
     """
     Generate a prompt for the LLM recommendation.
 
     Args:
-        critical_info (str): Critical information for the vehicle maintenance advisor.
-        telemetry_data (str): Telemetry data for the vehicle.
-        similar_issues (str): Similar past issues for the vehicle.
+        agent_role (str): Role of the agent generating the LLM recommendation.
+        agent_kind_of_data (str): Kind of data the agent consumes.
+        critical_info (str): Critical information for the LLM recommendation.
+        timeseries_data (str): Timeseries data for the LLM recommendation.
+        historical_recommendations_list (str): List of historical recommendations for the LLM recommendation.
 
     Returns:
         str: The prompt for the LLM recommendation
     """
 
     return f"""
-        You are a vehicle maintenance advisor. {critical_info} 
+        You are a helpful {agent_role}. {critical_info} 
         
-        Given the following telemetry data and past similar issues, please analyze the data and recommend an immediate action (continue driving, pull off the road, or schedule maintenance) with a clear explanation.
+        Given the following {agent_kind_of_data} and past recommendations, please analyze the data and recommend an immediate action with a clear explanation.
         
-        Telemetry Data: {telemetry_data}
+        {agent_kind_of_data}: {timeseries_data}
 
-        Similar Past Issues: {similar_issues}
+        Past Recommendations: {historical_recommendations_list}
         """

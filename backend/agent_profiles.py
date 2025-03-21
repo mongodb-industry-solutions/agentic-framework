@@ -11,10 +11,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class AgentProfiler(MongoDBConnector):
+class AgentProfiles(MongoDBConnector):
     def __init__(self, collection_name: str=None, uri: str = None, database_name: str = None, appname: str = None):
         """
-        AgentProfiler class to retrieve agent profiles from MongoDB.
+        AgentProfiles class to retrieve agent profiles from MongoDB.
 
         Args:
             collection_name (str, optional): Collection name. Default is None and will be retrieved from the config: MDB_AGENT_PROFILES_COLLECTION.
@@ -31,7 +31,7 @@ class AgentProfiler(MongoDBConnector):
         self.collection = self.get_collection(self.collection_name)
         # Ensure unique index on agent_id
         self.collection.create_index("agent_id", unique=True)
-        logger.info(f"AgentProfiler initialized - Retrieving agent profiles from collection: {self.collection_name}")
+        logger.info(f"AgentProfiles initialized - Retrieving agent profiles from collection: {self.collection_name}")
 
     def get_agent_profile(self, agent_id: str, update_default: bool = False) -> dict:
         """Retrieve the agent profile for the given agent ID.
@@ -94,6 +94,6 @@ class AgentProfiler(MongoDBConnector):
 if __name__ == "__main__":
 
     # Example usage
-    profiler = AgentProfiler()
+    profiler = AgentProfiles()
     p = profiler.get_agent_profile("MANUFACTORING_AG01")
     print(p)

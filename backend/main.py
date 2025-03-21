@@ -38,7 +38,6 @@ MDB_HISTORICAL_RECOMMENDATIONS_COLLECTION = config.get("MDB_HISTORICAL_RECOMMEND
 MDB_AGENT_SESSIONS_COLLECTION = config.get("MDB_AGENT_SESSIONS_COLLECTION")
 MDB_EMBEDDINGS_COLLECTION = config.get("MDB_EMBEDDINGS_COLLECTION")
 MDB_EMBEDDINGS_COLLECTION_VS_FIELD = config.get("MDB_EMBEDDINGS_COLLECTION_VS_FIELD")
-MDB_EMBEDDINGS_COLLECTION_PAST = "past_" + MDB_EMBEDDINGS_COLLECTION
 MDB_TIMESERIES_COLLECTION = config.get("MDB_TIMESERIES_COLLECTION")
 MDB_LOGS_COLLECTION = config.get("MDB_LOGS_COLLECTION")
 MDB_AGENT_PROFILES_COLLECTION = config.get("MDB_AGENT_PROFILES_COLLECTION")
@@ -75,11 +74,11 @@ async def read_root(request: Request):
 
 
 @app.get("/run-agent")
-async def run_agent(issue_report: str = Query(initial_query, description=initial_query_description)):
-    """Run the agent with the given issue report.
+async def run_agent(query_reported: str = Query(initial_query, description=initial_query_description)):
+    """Run the agent with the given query.
 
     Args:
-        issue_report (str, optional): _description_. Defaults to Query(initial_query, description=initial_query_description).
+        query_reported (str, optional): _description_. Defaults to Query(initial_query, description=initial_query_description).
 
     Raises:
         HTTPException: _description_
@@ -88,11 +87,11 @@ async def run_agent(issue_report: str = Query(initial_query, description=initial
         _type_: _description_
     """
     initial_state: AgentState = {
-        "issue_report": issue_report,
+        "query_reported": query_reported,
         "chain_of_thought": "",
-        "telemetry_data": [],
+        "timeseries_data": [],
         "embedding_vector": [],
-        "similar_issues_list": [],
+        "historical_recommendations_list": [],
         "recommendation_text": "",
         "next_step": "reasoning_node",
         "updates": [],
@@ -119,7 +118,7 @@ async def run_agent(issue_report: str = Query(initial_query, description=initial
             with MongoDBConnector(uri=MDB_URI, database_name=MDB_DATABASE_NAME) as mdb_connector: 
                 session_metadata = {
                     "thread_id": thread_id,
-                    "issue_report": issue_report,
+                    "query_reported": query_reported,
                     "created_at": datetime.datetime.now(datetime.timezone.utc),
                     "status": "completed",
                     "recommendation": final_state["recommendation_text"]
@@ -137,7 +136,7 @@ async def run_agent(issue_report: str = Query(initial_query, description=initial
             with MongoDBConnector(uri=MDB_URI, database_name=MDB_DATABASE_NAME) as mdb_connector: 
                 session_metadata = {
                     "thread_id": thread_id,
-                    "issue_report": issue_report,
+                    "query_reported": query_reported,
                     "created_at": datetime.datetime.now(datetime.timezone.utc),
                     "status": "error",
                     "error_message": str(e)
@@ -221,7 +220,7 @@ async def get_run_documents(thread_id: str = Query(..., description="Thread ID o
             mdb_timeseries_collection = mdb_connector.get_collection(MDB_TIMESERIES_COLLECTION)
             mdb_logs_collection = mdb_connector.get_collection(MDB_LOGS_COLLECTION)
             mdb_agent_profiles_collection = mdb_connector.get_collection(MDB_AGENT_PROFILES_COLLECTION)
-            mdb_embeddings_collection_past = mdb_connector.get_collection(MDB_EMBEDDINGS_COLLECTION_PAST)
+            mdb_embeddings_collection = mdb_connector.get_collection(MDB_EMBEDDINGS_COLLECTION)
             mdb_checkpoint_collection = mdb_connector.get_collection(MDB_CHECKPOINTER_COLLECTION)
         
             # Retrieve agent_sessions document
@@ -230,8 +229,8 @@ async def get_run_documents(thread_id: str = Query(..., description="Thread ID o
             # Retrieve historical_recommendations for the run
             historical = mdb_historical_recommendations_collection.find_one(query)
 
-            # Retrieve telemetry_data for the run
-            telemetry = mdb_timeseries_collection.find_one(query)
+            # Retrieve 3 timeseries data points
+            timeseries = list(mdb_timeseries_collection.find().limit(3))
 
             # Retrieve logs for the run
             log = mdb_logs_collection.find_one(query)
@@ -240,23 +239,24 @@ async def get_run_documents(thread_id: str = Query(..., description="Thread ID o
             chosen_agent_id = AGENT_PROFILE_CHOSEN_ID or "DEFAULT"
             profile = mdb_agent_profiles_collection.find_one({"agent_id": chosen_agent_id})
 
-            # Retrieve one sample past_issues document (most recent)
-            past_issue = mdb_embeddings_collection_past.find_one(sort=[("created_at", -1)])
+            # Retrieve 3 queries from the embeddings collection
+            queries = list(mdb_embeddings_collection.find().limit(3))
 
             # Retrieve the last checkpoint
-            last_checkpoint = mdb_checkpoint_collection.find_one(sort=[("created_at", -1)])
+            last_checkpoint = mdb_checkpoint_collection.find_one(query)
         
         logger.info(f"Formatting documents for thread ID: {thread_id}")
         # Format the documents
         docs["agent_sessions"] = format_document(session) if session else {}
         docs["historical_recommendations"] = format_document(historical) if historical else {}
-        docs["telemetry_data"] = format_document(telemetry) if telemetry else {}
+        docs["agent_profile"] = format_document(profile) if profile else {}
+        docs[MDB_TIMESERIES_COLLECTION] = [format_document(record) for record in timeseries] if timeseries else {}
+        docs["queries"] = [format_document(record) for record in queries] if queries else {}
         docs["logs"] = format_document(log) if log else {}
-        docs["agent_profiles"] = format_document(profile) if profile else {}
-        docs["past_issues"] = format_document(past_issue) if past_issue else {}
-        docs["checkpoints"] = format_document(last_checkpoint) if last_checkpoint else {}
+        docs["last_checkpoint"] = format_document(last_checkpoint) if last_checkpoint else {}
         logger.info(f"Documents formatted for thread ID: {thread_id}")
 
         return docs
     except Exception as e:
+        logger.error(f"Error while retrieving documents: {e}")
         raise HTTPException(status_code=500, detail=str(e))

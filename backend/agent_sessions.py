@@ -53,18 +53,18 @@ class AgentSessions(MongoDBConnector):
                 logging.warning("No previous sessions found.")
                 return False
             logger.info(f"\n=== Recent Sessions ===")
-            logger.info("ID | Time | Issue | Status")
+            logger.info("ID | Time | Query | Status")
             logger.info("-" * 70)
             for session in recent_sessions:
                 thread_id = session.get("thread_id", "unknown")
                 created_at = session.get("created_at", "unknown")
-                issue = session.get("issue_report", "unknown")
+                query = session.get("query_reported", "unknown")
                 status = session.get("status", "unknown")
-                if len(issue) > 30:
-                    issue = issue[:27] + "..."
+                if len(query) > 30:
+                    query = query[:27] + "..."
                 if isinstance(created_at, datetime.datetime):
                     created_at = created_at.strftime("%Y-%m-%d %H:%M")
-                logger.info(f"{thread_id} | {created_at} | {issue} | {status}")
+                logger.info(f"{thread_id} | {created_at} | {query} | {status}")
             return True
         except Exception as e:
             logger.error(f"[MongoDB] Error retrieving sessions: {e}")
