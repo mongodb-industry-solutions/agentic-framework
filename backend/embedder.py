@@ -126,4 +126,4 @@ if __name__ == "__main__":
 
     # Example usage
     embedder = Embedder()
-    embedder.embed(attribute_name="issue", overwrite=True)
+    embedder.embed(attribute_name="query", overwrite=True)

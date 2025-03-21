@@ -1,9 +1,9 @@
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const issue_report = searchParams.get("issue_report");
+  const query_reported = searchParams.get("query_reported");
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    const apiEndpoint = `${apiUrl}/run-agent?issue_report=${encodeURIComponent(issue_report)}`;
+    const apiEndpoint = `${apiUrl}/run-agent?query_reported=${encodeURIComponent(query_reported)}`;
     console.log("API Endpoint:", apiEndpoint); // Debugging log
     const res = await fetch(apiEndpoint);
 

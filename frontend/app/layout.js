@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Agentic Framework Example - Incident Advisor",
+  title: "Agentic Framework",
   description: "This AI Agent listens to complaints and advises on next course of action",
 };
 

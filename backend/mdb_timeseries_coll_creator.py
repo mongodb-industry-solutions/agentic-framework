@@ -82,7 +82,7 @@ class TimeSeriesCollectionCreator(MongoDBConnector):
 if __name__ == "__main__":
     # Example usage
     response = TimeSeriesCollectionCreator().create_timeseries_collection(
-        collection_name="telemetry_data",
+        collection_name="timeseries_data",
         time_field="timestamp",
         granularity="minutes"
     )

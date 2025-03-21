@@ -4,22 +4,22 @@ from datetime import datetime
 
 # --- Define State Types ---
 
-class TelemetryRecord(TypedDict):
+class TimeseriesRecord(TypedDict):
     timestamp: datetime
     engine_temperature: float
     oil_pressure: float
     avg_fuel_consumption: float
 
-class SimilarIssue(TypedDict):
-    issue: str
+class HistoricalRecommendation(TypedDict):
+    query: str
     recommendation: str
 
 class AgentState(TypedDict):
-    issue_report: str
+    query_reported: str
     chain_of_thought: str
-    telemetry_data: List[TelemetryRecord]
+    timeseries_data: List[TimeseriesRecord]
     embedding_vector: List[float]
-    similar_issues_list: List[SimilarIssue]
+    historical_recommendations_list: List[HistoricalRecommendation]
     recommendation_text: str
     next_step: Literal[
         "__start__", "start", 
