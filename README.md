@@ -83,6 +83,33 @@ Before you begin, ensure you have met the following requirements:
 - **Python >=3.10,<3.11** - If you are Mac user, you can install Python 3.10.11 using this [link](https://www.python.org/ftp/python/3.10.11/python-3.10.11-macos11.pkg).
 - **Poetry** (install via [Poetry's official documentation](https://python-poetry.org/docs/#installation))
 
+## Getting Started
+
+Follow these steps to set up the project locally.
+
+### Create a New Repository
+
+1. Navigate to the repository template on GitHub and click on **Use this template**.
+2. Create a new repository.
+3. **Do not** check the "Include all branches" option.
+4. Define a repository name following the naming convention: `<project_name>-<highlighted_feature>`. For example, `leafy-bank-macro-indicators-agent` (use hyphens to separate words).
+   - The **industry** and **project name** are required; you can be creative with the highlighted feature.
+5. Provide a clear description for the repository, such as: "A repository template to easily create new demos by following the same structure."
+6. Set the visibility to **Internal**.
+7. Click **Create repository**.
+
+### GitHub Desktop Setup
+
+1. Install GitHub Desktop if you haven't already. You can download it from [GitHub Desktop's official website](https://desktop.github.com/).
+2. Open GitHub Desktop and sign in to your GitHub account.
+3. Clone the newly created repository:
+   - Click on **File** > **Clone Repository**.
+   - Select your repository from the list and click **Clone**.
+4. Create your first branch:
+   - In the GitHub Desktop interface, click on the **Current Branch** dropdown.
+   - Select **New Branch** and name it `feature/branch01`.
+   - Click **Create Branch**.
+
 ## Setup Instructions
 
 ### Step 1: Include meaningful CSV data for your use case
