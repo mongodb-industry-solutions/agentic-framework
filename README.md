@@ -472,6 +472,10 @@ NEXT_PUBLIC_INITIAL_QUERY="What adjustments should I make to my portfolio given 
 
 1. Run [mdb_vector_search_idx_creator.py](/backend/mdb_vector_search_idx_creator.py) to create a vector search index in MongoDB.
 
+### Step 8: Customize your Frontend
+
+1. Ensure to customize your frontend by updating [page.jsx](/frontend/app/page.jsx) according to your use case.
+
 ## Run it Locally
 
 ### Backend
