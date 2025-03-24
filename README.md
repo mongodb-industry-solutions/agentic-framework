@@ -85,8 +85,6 @@ Before you begin, ensure you have met the following requirements:
 
 ## Getting Started
 
-Follow these steps to set up the project locally.
-
 ### Create a New Repository
 
 1. Navigate to the repository template on GitHub and click on **Use this template**.
@@ -343,8 +341,25 @@ Attributes in config.json
     * Example: `logs`
 
 16. `MDB_AGENT_PROFILES_COLLECTION`:
-    * Name of the MongoDB collection used to store agent profiles.
-    * Example: `agent_profiles`
+    * Name of the MongoDB collection used to store agent profiles. e.g.: `agent_profiles`
+    * You can add your customer agent profiles to this collection by importing a JSON file to the collection.
+    * Example for a Finance Agent Profile:
+    ```json
+    {
+      "_id": {
+        "$oid": "67d2bffdf3fe062c9a3dbe3d"
+      },
+      "agent_id": "FINANCE_AG01",
+      "profile": "Finance Agent Profile",
+      "role": "Portfolio Advisor",
+      "kind_of_data": "Macroeconomic Indicators",
+      "motive": "Analyze macroeconomic data and provide portfolio adjustment recommendations.",
+      "instructions": "Follow economic trends and portfolio management principles.",
+      "rules": "Document all steps; ensure compliance with financial regulations; validate data accuracy.",
+      "goals": "Optimize portfolio allocation based on macroeconomic conditions and provide actionable insights."
+    }
+    ```
+    * The `AGENT_PROFILE_CHOSEN_ID` will determine which agent profile to use in the agent workflow.
 
 17. `MDB_AGENT_SESSIONS_COLLECTION`:
     * Name of the MongoDB collection used to store agent sessions.
