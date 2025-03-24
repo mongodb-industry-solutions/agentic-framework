@@ -474,7 +474,7 @@ NEXT_PUBLIC_INITIAL_QUERY="What adjustments should I make to my portfolio given 
 
 ### Step 8: Customize your Frontend
 
-1. Ensure to customize your frontend by updating [page.py](/frontend/app/page.jsx) according to your use case.
+1. Ensure to customize your frontend by updating [page.jsx](/frontend/app/page.jsx) according to your use case.
 
 ## Run it Locally
 
