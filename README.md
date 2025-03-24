@@ -80,7 +80,7 @@ MongoDB Atlas supports native vector search, enabling fast and efficient similar
 Before you begin, ensure you have met the following requirements:
 
 - **MongoDB Atlas** account - [Register Here](https://account.mongodb.com/account/register)
-- **Python 3.10 or higher**
+- **Python >=3.10,<3.11** - If you are Mac user, you can install Python 3.10.11 using this [link](https://www.python.org/ftp/python/3.10.11/python-3.10.11-macos11.pkg).
 - **Poetry** (install via [Poetry's official documentation](https://python-poetry.org/docs/#installation))
 
 ## Setup Instructions
