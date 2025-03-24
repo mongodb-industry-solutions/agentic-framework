@@ -342,7 +342,7 @@ Attributes in config.json
 
 16. `MDB_AGENT_PROFILES_COLLECTION`:
     * Name of the MongoDB collection used to store agent profiles. e.g.: `agent_profiles`
-    * You can add your customer agent profiles to this collection by importing a JSON file to the collection.
+    * You can add your custom agent profiles to this collection by importing a JSON file to the collection.
     * Example for a Finance Agent Profile:
     ```json
     {
