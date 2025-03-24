@@ -55,7 +55,6 @@ class AgentTools(MongoDBConnector):
         self.mdb_timeseries_granularity = self.config.get("MDB_TIMESERIES_GRANULARITY")
         self.default_timeseries_data = self.config.get("DEFAULT_TIMESERIES_DATA")
         self.critical_conditions_config = self.config.get("CRITICAL_CONDITIONS")
-        self.csv_to_vectorize = self.config.get("CSV_TO_VECTORIZE")
         self.mdb_embeddings_collection = self.config.get("MDB_EMBEDDINGS_COLLECTION")
         self.mdb_embeddings_collection_vs_field = self.config.get("MDB_EMBEDDINGS_COLLECTION_VS_FIELD")
         self.mdb_vs_index = self.config.get("MDB_VS_INDEX")

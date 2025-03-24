@@ -45,9 +45,6 @@ AGENT_PROFILE_CHOSEN_ID = config.get("AGENT_PROFILE_CHOSEN_ID")
 # Checkpointer
 MDB_CHECKPOINTER_COLLECTION = config.get("MDB_CHECKPOINTER_COLLECTION")
 MDB_CHECKPOINTER_WRITES = MDB_CHECKPOINTER_COLLECTION + "_writes"
-# Query
-initial_query = config.get("INITIAL_QUERY")
-initial_query_description = config.get("INITIAL_QUERY_DESCRIPTION")
 
 # Configure logging
 logging.basicConfig(
@@ -74,11 +71,11 @@ async def read_root(request: Request):
 
 
 @app.get("/run-agent")
-async def run_agent(query_reported: str = Query(initial_query, description=initial_query_description)):
+async def run_agent(query_reported: str = Query("Default query reported by the user", description="Query reported text")):
     """Run the agent with the given query.
 
     Args:
-        query_reported (str, optional): _description_. Defaults to Query(initial_query, description=initial_query_description).
+        query_reported (str, optional): _description_. Defaults to Query("Default query reported by the user", description="Query reported text").
 
     Raises:
         HTTPException: _description_
