@@ -61,13 +61,11 @@ if __name__ == "__main__":
     config_loader = ConfigLoader()
 
     # Load configurations
-    CSV_FILEPATH = config_loader.get("CSV_FILEPATH")
-    INDUSTRY = config_loader.get("INDUSTRY")
-    CHATCOMPLETIONS_MODEL_ID = config_loader.get("CHATCOMPLETIONS_MODEL_ID")
-    EMBEDDINGS_MODEL_ID = config_loader.get("EMBEDDINGS_MODEL_ID")
-
-    print(f"Example CSV Path: {CSV_FILEPATH}")
-    print(f"Example Industry: {INDUSTRY}")
-    print(f"Example Chat Completions Model ID: {CHATCOMPLETIONS_MODEL_ID}")
-    print(f"Example Embeddings Model ID: {EMBEDDINGS_MODEL_ID}")
+    MDB_DATABASE_NAME = config_loader.get("MDB_DATABASE_NAME")
+    MDB_TIMESERIES_COLLECTION = config_loader.get("MDB_TIMESERIES_COLLECTION")
+    CSV_DATA = config_loader.get("CSV_DATA")
     
+    # Print configurations
+    logging.info(f"MDB_DATABASE_NAME: {MDB_DATABASE_NAME}")
+    logging.info(f"MDB_TIMESERIES_COLLECTION: {MDB_TIMESERIES_COLLECTION}")
+    logging.info(f"CSV_DATA: {CSV_DATA}")

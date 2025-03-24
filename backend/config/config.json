@@ -1,11 +1,7 @@
 {
-    "INDUSTRY": "Finance",
-    "INITIAL_QUERY": "What adjustments should I make to my portfolio given the current macro economic conditions?",
-    "INITIAL_QUERY_DESCRIPTION": "Query reported text",
     "CSV_DATA": "data/csv/macro_indicators_data.csv",
-    "CSV_TO_VECTORIZE": "data/csv/fsi_queries.csv",
     "MDB_DATABASE_NAME": "agentic_framework",
-    "MDB_TIMESERIES_COLLECTION": "finance_data",
+    "MDB_TIMESERIES_COLLECTION": "macro_indicators_data",
     "DEFAULT_TIMESERIES_DATA": [
         {
             "timestamp": "2025-03-21T13:15:00Z",

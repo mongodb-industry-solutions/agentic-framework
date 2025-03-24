@@ -3,9 +3,7 @@
 import React, { useState } from "react";
 import Modal from "@leafygreen-ui/modal";
 import { H3, Body } from "@leafygreen-ui/typography";
-import Tooltip from "@leafygreen-ui/tooltip";
 import Icon from "@leafygreen-ui/icon";
-import IconButton from "@leafygreen-ui/icon-button";
 import PropTypes from "prop-types";
 import styles from "./InfoWizard.module.css";
 import Button from "@leafygreen-ui/button";
@@ -27,7 +25,12 @@ const InfoWizard = ({
         Tell me more!
       </Button>
 
-      <Modal open={open} setOpen={setOpen} className={styles.modal}>
+      {/* Updated Modal without the ref prop */}
+      <Modal
+        open={open}
+        setOpen={setOpen}
+        className={styles.modal} // Removed the `ref` prop
+      >
         <div className={styles.modalContent}>
           <Tabs aria-label="info wizard tabs" setSelected={setSelected} selected={selected}>
             {sections.map((tab, tabIndex) => (
@@ -36,17 +39,17 @@ const InfoWizard = ({
                   <div key={sectionIndex} className={styles.section}>
                     {section.heading && <H3 className={styles.modalH3}>{section.heading}</H3>}
                     {section.body &&
-                                  (Array.isArray(section.body) ? (
-                                    <ul className={styles.list}>
-                                    {section.body.map((item, idx) => (
-                                      <li key={idx} className={styles.listItem}>
-                                        <Body>{item}</Body>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                  ) : (
-                                    <Body>{section.body}</Body>
-                                  ))}
+                      (Array.isArray(section.body) ? (
+                        <ul className={styles.list}>
+                          {section.body.map((item, idx) => (
+                            <li key={idx} className={styles.listItem}>
+                              <Body>{item}</Body>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <Body>{section.body}</Body>
+                      ))}
 
                     {/* Handle single image */}
                     {section.image && (
