@@ -166,7 +166,7 @@ Combination of rising interest rates and high VIX,Focus on bond assets to hedge 
 
 ### Step 3: Add MongoDB User
 
-1. Follow [MongoDB's guide](https://www.mongodb.com/docs/atlas/security-add-mongodb-users/) to create a user with **dbOwner** and **readWrite** access to your database.
+1. Follow [MongoDB's guide](https://www.mongodb.com/docs/atlas/security-add-mongodb-users/) to create a user with **dbAdmin** and **readWrite** access to your database.
 
 ### Step 4: Configure your Agentic Workflow through a JSON config file
 
