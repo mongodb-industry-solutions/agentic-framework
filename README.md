@@ -2,6 +2,14 @@
 
 This repository hosts the `agentic-framework`, designed for building adaptable and reusable intelligent ai agentic workflows. The framework provides robust support for integrating and managing tools for AI-driven operations, ideal for varied domains and industry requirements.
 
+## Goal
+
+The primary goal of the Agentic Framework is to accelerate the development of AI-driven workflows by providing a flexible and extensible foundation. Rather than offering a fixed set of tools or functionalities, the framework is designed to serve as a starting point for building intelligent agents tailored to specific use cases.
+
+The current workflow is intentionally simple, showcasing the core capabilities of the framework. This simplicity allows users to quickly understand its structure and functionality while encouraging customization. For more complex use cases or advanced agents, users have the autonomy to extend the framework by adding new tools, nodes, conditions, or workflows as needed.
+
+By prioritizing adaptability and modularity, the Agentic Framework empowers developers to create AI agents that are not only efficient but also highly customizable to meet the unique demands of their industries or projects.
+
 ## High Level Logical Architecture
 
 ![High Level Logical Architecture](architecture/logical.png)
