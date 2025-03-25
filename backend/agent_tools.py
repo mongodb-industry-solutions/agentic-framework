@@ -3,8 +3,6 @@ from db.mdb import MongoDBConnector
 import datetime
 import logging
 
-from langchain.agents import tool
-
 from config.config_loader import ConfigLoader
 from config.prompts import get_chain_of_thoughts_prompt, get_llm_recommendation_prompt
 from utils import convert_objectids
