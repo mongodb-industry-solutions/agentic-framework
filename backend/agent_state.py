@@ -6,9 +6,9 @@ from datetime import datetime
 
 class TimeseriesRecord(TypedDict):
     timestamp: datetime
-    engine_temperature: float
-    oil_pressure: float
-    avg_fuel_consumption: float
+    field1: float
+    field2: float
+    field3: float
 
 class HistoricalRecommendation(TypedDict):
     query: str
