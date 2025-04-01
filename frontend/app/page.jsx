@@ -17,6 +17,7 @@ import {
 } from "@leafygreen-ui/typography";
 import Code from "@leafygreen-ui/code";
 import InfoWizard from "@/components/InfoWizard/InfoWizard";
+import TextInput from "@leafygreen-ui/text-input";
 
 export default function HomePage() {
   const [selectedOption, setSelectedOption] = useState("new"); // "new", "resume", or "list"
@@ -108,7 +109,7 @@ export default function HomePage() {
           position: "absolute",
           top: "20px",
           right: "20px",
-          zIndex: 9999, 
+          zIndex: 9999,
         }}
       >
         <div className="infowizard-container">
@@ -182,32 +183,49 @@ export default function HomePage() {
         </div>
       </div>
       <div style={{ padding: "20px", fontFamily: "Arial, sans-serif", width: "100%" }}>
-        <H1 style={{ marginBottom: "5px" }}>Agentic Framework</H1>
-        <Body>The Agentic Framework serves as a versatile AI-driven recommendation assistant capable of comprehending your data, performing a multi-step diagnostic workflow using <b>LangGraph</b>, and generating actionable recommendations. The backend reads timeseries data from a CSV file or MongoDB, generates text embeddings using the <b>Cohere English V3 model</b>, performs vector searches to identify similar past queries using <b>MongoDB Atlas Vector Search</b>, persists session and run data, and finally generates a diagnostic recommendation. <b>MongoDB</b> stores agent profiles, historical recommendations, timeseries data, session logs, and more. This persistent storage not only logs every step of the diagnostic process for traceability but also enables efficient querying and reusability of past data.</Body>
-        <H3 style={{ marginBottom: "20px", marginTop: "20px" }}>Please choose one of the following options</H3>
 
-        {/* Option Buttons */}
-        <div style={{ marginBottom: "20px" }}>
-          <Button onClick={() => handleViewChange("new")} style={{ marginRight: "10px" }} variant="primary">
-            New Diagnosis
-          </Button>
+        <div style={{ marginLeft: "30px" }}>
+          <H1 style={{ marginBottom: "5px" }}>Agentic Framework</H1>
+          <Body style={{ width: "50%" }}>The Agentic Framework serves as a versatile AI-driven recommendation assistant capable of comprehending your data, performing a multi-step diagnostic workflow using <b>LangGraph</b>, and generating actionable recommendations. </Body>
+          <Body style={{ width: "50%", paddingTop: "15px" }}> The backend reads timeseries data from a CSV file or MongoDB, generates text embeddings using the <b>Cohere English V3 model</b>, performs vector searches to identify similar past queries using <b>MongoDB Atlas Vector Search</b>, persists session and run data, and finally generates a diagnostic recommendation. <b>MongoDB</b> stores agent profiles, historical recommendations, timeseries data, session logs, and more.</Body>
+          <Body style={{ width: "50%", paddingTop: "15px" }}> This persistent storage not only logs every step of the diagnostic process for traceability but also enables efficient querying and reusability of past data.</Body>
 
-          <Button onClick={() => handleViewChange("resume")} style={{ marginRight: "10px" }} variant="primary">
-            Resume Diagnosis
-          </Button>
-          <Button onClick={() => handleViewChange("list")} variant="primary">
-            List Sessions
-          </Button>
+          <H3 style={{ marginBottom: "20px", marginTop: "20px" }}>Please choose one of the following options</H3>
+
+          {/* Option Buttons */}
+          <div style={{ marginBottom: "20px" }}>
+            <Button onClick={() => handleViewChange("new")} style={{ marginRight: "10px" }} variant="default">
+              New Diagnosis
+            </Button>
+
+            <Button onClick={() => handleViewChange("resume")} style={{ marginRight: "10px" }} variant="default">
+              Resume Diagnosis
+            </Button>
+            <Button onClick={() => handleViewChange("list")} variant="default">
+              List Sessions
+            </Button>
+          </div>
+
         </div>
 
         <div style={{ display: "flex", width: "100%" }}>
           {/* Left Column: Agent Workflow Output */}
-          <div style={{ flex: 1, maxWidth: "50%", padding: "20px", borderRight: "1px solid #ccc", overflowX: "auto" }}>
+          <div style={{ flex: 1, maxWidth: "50%", padding: "20px", borderRight: "1px solid #ccc", overflowX: "auto", marginLeft: "10px" }}>
             {selectedOption === "new" && (
               <>
-                <Subtitle>New Diagnosis</Subtitle>
+                <Subtitle style={{ marginBottom: "10px" }}>New Diagnosis</Subtitle>
+
+                <TextInput
+                  label="Query Reported"
+                  placeholder="Undefined"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+
+                />
+
+                {/**
                 <Label style={{ display: "block", marginTop: "10px" }}>
-                  Query Reported:
+                  Query Reported
                   <input
                     type="text"
                     value={query}
@@ -215,6 +233,8 @@ export default function HomePage() {
                     style={{ width: "100%", padding: "8px", marginTop: "6px" }}
                   />
                 </Label>
+                 */}
+
                 <Button onClick={runAgent} disabled={loading} variant="baseGreen" style={{ marginTop: "20px", padding: "8px 12px" }}>
                   Run Agent
                 </Button>
@@ -223,7 +243,16 @@ export default function HomePage() {
 
             {selectedOption === "resume" && (
               <>
-                <Subtitle>Resume Diagnosis</Subtitle>
+                <Subtitle style={{ marginBottom: "10px" }}>Resume Diagnosis</Subtitle>
+
+                <TextInput
+                  label="Thread ID"
+                  placeholder="Input Thread ID"
+                  value={threadId}
+                  onChange={(e) => setThreadId(e.target.value)}
+                />
+
+                {/**
                 <Label style={{ display: "block", marginTop: "10px" }}>
                   Thread ID:
                   <input
@@ -233,6 +262,8 @@ export default function HomePage() {
                     style={{ width: "100%", padding: "8px", marginTop: "6px" }}
                   />
                 </Label>
+
+                 */}
                 <Button onClick={resumeAgent} disabled={loading} variant="baseGreen" style={{ marginTop: "20px", padding: "8px 12px" }}>
                   Resume Agent
                 </Button>
