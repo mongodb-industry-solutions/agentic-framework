@@ -505,7 +505,7 @@ NEXT_PUBLIC_INITIAL_QUERY="What adjustments should I make to my portfolio given 
     make poetry_install
     ````
 6. Verify that the `.venv` folder has been generated within the `/backend` directory.
-7. To start the backend service, run:
+7. To start the backend service, navigate to the `/backend` folder and run:
 
 ```bash
 poetry run uvicorn main:app --host 0.0.0.0 --port 8000
