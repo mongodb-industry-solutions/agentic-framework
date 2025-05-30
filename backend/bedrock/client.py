@@ -13,16 +13,8 @@ load_dotenv()
 class BedrockClient:
     """Implementation of BedrockClient class."""
     
-    def __init__(self, region_name: Optional[str] = os.getenv("AWS_REGION"), aws_access_key: Optional[str] = os.getenv("AWS_ACCESS_KEY_ID"), 
-                 aws_secret_key: Optional[str] = os.getenv("AWS_SECRET_ACCESS_KEY"), assumed_role: Optional[str] = None) -> None:
-        """Initialize BedrockClient class.
-        
-        Args:
-            region_name (str): AWS region name. Default is os.getenv("AWS_REGION").
-            aws_access_key (str): AWS access key. Default is os.getenv("AWS_ACCESS_KEY_ID").
-            aws_secret_key (str): AWS secret key. Default is os.getenv("AWS_SECRET_ACCESS_KEY").
-            assumed_role (str): AWS assumed role. Default is None.
-        """
+    def __init__(self, aws_access_key: Optional[str] = None, aws_secret_key: Optional[str] = None,
+                 assumed_role: Optional[str] = None, region_name: Optional[str] = "us-east-1") -> None:
         self.region_name = region_name
         self.assumed_role = assumed_role
         self.aws_access_key = aws_access_key
@@ -86,26 +78,3 @@ class BedrockClient:
     def __del__(self):
         """Destructor."""
         self._close_bedrock()
-
-
-# Example usage of the BedrockClient class.
-if __name__ == '__main__':
-
-    # If you are not going to use BedrockClient and its models, you might remove the packages boto3 and botocore. If so:
-    # Open a Terminal and run the following commands:
-    # 1. cd backend ---> (Make sure to be in the backend directory)
-    # 2. poetry remove boto3 botocore ---> (This will remove the packages from the project)
-
-    aws_access_key = os.getenv("AWS_ACCESS_KEY_ID")
-    aws_secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
-    region_name = os.getenv("AWS_REGION")
-
-    # Example usage of the BedrockClient class.
-    client = BedrockClient(
-        aws_access_key=aws_access_key,
-        aws_secret_key=aws_secret_key,
-        region_name=region_name
-    )._get_bedrock_client()
-
-    print(type(client))
-    print(client)

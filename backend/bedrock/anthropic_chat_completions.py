@@ -7,7 +7,6 @@ from typing import Optional
 
 import logging
 
-import os
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -23,15 +22,15 @@ class BedrockAnthropicChatCompletions(BedrockClient):
 
     log: logging.Logger = logging.getLogger("BedrockAnthropicChatCompletions")
 
-    def __init__(self, aws_access_key: Optional[str] = os.getenv("AWS_ACCESS_KEY_ID"), aws_secret_key: Optional[str] = os.getenv("AWS_SECRET_ACCESS_KEY"),
-                 region_name: Optional[str] = os.getenv("AWS_REGION"), model_id: Optional[str] = "anthropic.claude-3-haiku-20240307-v1:0") -> None:
+    def __init__(self, aws_access_key: Optional[str] = None, aws_secret_key: Optional[str] = None, region_name: Optional[str] = "us-east-1",
+                model_id: Optional[str] = "anthropic.claude-3-haiku-20240307-v1:0") -> None:
         super().__init__(aws_access_key=aws_access_key, aws_secret_key=aws_secret_key, region_name=region_name)
         """
         Initialize the BedrockAnthropicChatCompletions class.
         
         Args:
-            aws_access_key (str): The AWS access key. Default is os.getenv("AWS_ACCESS_KEY_ID").
-            aws_secret_key (str): The AWS secret key. Default is os.getenv("AWS_SECRET_ACCESS_KEY").
+            aws_access_key (str): The AWS access key.
+            aws_secret_key (str): The AWS secret key.
             region_name (str): The AWS region name. Default is os.getenv("AWS_REGION").
             model_id (str): The model ID to use. Only accepts Anthropic Claude models.
             bedrock_client (BedrockClient): The BedrockClient instance.
@@ -75,7 +74,7 @@ class BedrockAnthropicChatCompletions(BedrockClient):
 
         except (ClientError, Exception) as e:
             self.log.error(
-                f"ERROR: Can't invoke '{self.model_id}'. Reason: {e}")
+                f"ERROR: Can't invoke '{self.text_model}'. Reason: {e}")
             exit(1)
 
         # Decode the response body.
@@ -85,37 +84,3 @@ class BedrockAnthropicChatCompletions(BedrockClient):
         response_text = model_response["content"][0]["text"]
 
         return response_text
-
-
-if __name__ == '__main__':
-
-    # Note that if you are going to execute this script, you need to change the import statement to: 
-    # from client import BedrockClient
-
-    # If you are not going to use BedrockClient and its models, you might remove the packages boto3 and botocore. If so:
-    # Open a Terminal and run the following commands:
-    # 1. cd backend ---> (Make sure to be in the backend directory)
-    # 2. poetry remove boto3 botocore ---> (This will remove the packages from the project)
-
-    # Example usage of the BedrockAnthropicChatCompletions class.
-    chat_completions_model = "anthropic.claude-3-haiku-20240307-v1:0" # You can change this to any Claude Anthropic model.
-    aws_access_key = os.getenv("AWS_ACCESS_KEY_ID")
-    aws_secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
-    region_name = os.getenv("AWS_REGION")
-
-    # Example usage of the BedrockAnthropicChatCompletions class.
-    chat_completions = BedrockAnthropicChatCompletions(
-        model_id=chat_completions_model,
-        region_name=region_name,
-        aws_access_key=aws_access_key,
-        aws_secret_key=aws_secret_key
-    )
-
-    # Example prompt for the chat completion model.
-    prompt = "What is the meaning of life?"
-
-    # Generate a chat completion based on the prompt.
-    answer = chat_completions.predict(prompt)
-
-    print(type(answer))
-    print(answer)

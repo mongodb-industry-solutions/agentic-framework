@@ -7,7 +7,6 @@ from typing import Optional
 
 import logging
 
-import os
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -25,8 +24,7 @@ class BedrockCohereEnglishEmbeddings(BedrockClient):
 
     log: logging.Logger = logging.getLogger("BedrockCohereEnglishEmbeddings")
 
-    def __init__(self, model_id: str = "cohere.embed-english-v3", aws_access_key: Optional[str] = os.getenv("AWS_ACCESS_KEY_ID"), 
-                 aws_secret_key: Optional[str] = os.getenv("AWS_SECRET_ACCESS_KEY"), region_name: Optional[str] = os.getenv("AWS_REGION") ) -> None:
+    def __init__(self, model_id: str = "cohere.embed-english-v3", aws_access_key: Optional[str] = None, aws_secret_key: Optional[str] = None, region_name: Optional[str] = "us-east-1") -> None:
         super().__init__(aws_access_key=aws_access_key, aws_secret_key=aws_secret_key, region_name=region_name)
         """
         Initialize the BedrockCohereEnglishEmbeddings class.
@@ -92,31 +90,3 @@ class BedrockCohereEnglishEmbeddings(BedrockClient):
             message = err.response["Error"]["Message"]
             self.log.error("A client error occurred: %s", message)
 
-
-# Example usage of the BedrockCohereEnglishEmbeddings class.
-if __name__ == '__main__':
-
-    # Note that if you are going to execute this script, you need to change the import statement to: 
-    # from client import BedrockClient
-
-    # If you are not going to use BedrockClient and its models, you might remove the packages boto3 and botocore. If so:
-    # Open a Terminal and run the following commands:
-    # 1. cd backend ---> (Make sure to be in the backend directory)
-    # 2. poetry remove boto3 botocore ---> (This will remove the packages from the project)
-
-    embedding_model = "cohere.embed-english-v3" # You can change this to any other Cohere English model
-    aws_access_key = os.getenv("AWS_ACCESS_KEY_ID")
-    aws_secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
-    region_name = os.getenv("AWS_REGION")
-
-    # Example usage of the BedrockCohereEnglishEmbeddings class.
-    embeddings = BedrockCohereEnglishEmbeddings(
-        model_id=embedding_model,
-        region_name=region_name,
-        aws_access_key=aws_access_key,
-        aws_secret_key=aws_secret_key
-    )
-
-    print(type(embeddings))
-    print(embeddings)
-    print(embeddings.predict('Embed this text.'))
