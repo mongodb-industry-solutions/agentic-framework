@@ -62,9 +62,7 @@ class Embedder(MongoDBConnector):
         # Example usage of the BedrockCohereEnglishEmbeddings class.
         embeddings = BedrockCohereEnglishEmbeddings(
             model_id=model_id,
-            region_name=os.getenv("AWS_REGION"),
-            aws_access_key=os.getenv("AWS_ACCESS_KEY_ID"),
-            aws_secret_key=os.getenv("AWS_SECRET_ACCESS_KEY")
+            region_name=os.getenv("AWS_REGION")
         )
 
         try:
